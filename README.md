@@ -1,4 +1,3 @@
-# Git-course-
-This is my git and git hub course 
+# This is the real repo.
 <br>
-Author - Abhishek Mishra
+Author - Abhishek 
