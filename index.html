@@ -145,6 +145,10 @@
                         </label>
                         <button type="submit">Login</button>
                     </form>
+                    <div id="auth-session" class="auth-session" aria-live="polite">
+                        <p id="auth-user-status" class="muted-note">Not signed in.</p>
+                        <button id="logout-button" type="button" class="ghost-button" hidden>Logout</button>
+                    </div>
                 </section>
 
                 <section id="signup" class="auth-card">
@@ -176,6 +180,9 @@
         <p>&copy; 2026 Zomato demo. All rights reserved.</p>
     </footer>
 
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="/Git-course-/assets/js/firebase-config.js"></script>
     <script src="/Git-course-/assets/js/script.js"></script>
 </body>
 </html>

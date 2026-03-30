@@ -1,7 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const STORAGE_KEYS = {
     cart: "zomato-demo-cart",
-    user: "zomato-demo-user",
   };
 
   const DELIVERY_FEE = 40;
@@ -109,6 +108,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const checkoutButton = document.querySelector("#checkout-button");
   const loginForm = document.querySelector("#login-form");
   const signupForm = document.querySelector("#signup-form");
+  const authUserStatus = document.querySelector("#auth-user-status");
+  const logoutButton = document.querySelector("#logout-button");
   const navAnchors = Array.from(document.querySelectorAll('.nav-list a[href^="#"]'));
 
   if (
@@ -133,7 +134,8 @@ document.addEventListener("DOMContentLoaded", () => {
     query: "",
     activeFilter: "all",
     cart: loadState(STORAGE_KEYS.cart, {}),
-    user: loadState(STORAGE_KEYS.user, null),
+    user: null,
+    authReady: false,
   };
 
   const searchStatus = document.createElement("p");
@@ -144,6 +146,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   attachFormStatus(loginForm);
   attachFormStatus(signupForm);
+
+  const auth = initializeFirebaseAuth();
 
   function loadState(key, fallback) {
     try {
@@ -160,6 +164,50 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function formatCurrency(amount) {
     return `Rs. ${amount}`;
+  }
+
+  function isFirebaseConfigured(config) {
+    if (!config) {
+      return false;
+    }
+
+    return ["apiKey", "authDomain", "projectId", "appId"].every((key) => {
+      const value = config[key];
+      return typeof value === "string" && value.trim() && !value.startsWith("PASTE_YOUR_");
+    });
+  }
+
+  function initializeFirebaseAuth() {
+    const config = window.__FIREBASE_CONFIG__;
+
+    if (!window.firebase || !isFirebaseConfigured(config)) {
+      const message = "Firebase auth is not configured yet. Add your Firebase keys in assets/js/firebase-config.js.";
+      setFormStatus(loginForm, message);
+      setFormStatus(signupForm, message);
+      if (authUserStatus) {
+        authUserStatus.textContent = "Firebase auth not configured.";
+      }
+      return null;
+    }
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(config);
+    }
+
+    const authInstance = firebase.auth();
+    authInstance.onAuthStateChanged((user) => {
+      state.user = user
+        ? {
+            name: user.displayName || user.email || "User",
+            email: user.email || "",
+            uid: user.uid,
+          }
+        : null;
+      state.authReady = true;
+      updateAuthUI();
+    });
+
+    return authInstance;
   }
 
   function getFilteredRestaurants() {
@@ -309,7 +357,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (heroDescription) {
         heroDescription.textContent = heroDefault.description;
       }
-      searchStatus.textContent = "Search by restaurant, cuisine, or dish.";
+      searchStatus.textContent = auth ? "Search by restaurant, cuisine, or dish." : "Search works now. Add Firebase keys to enable shared login across devices.";
     }
   }
 
@@ -369,6 +417,42 @@ document.addEventListener("DOMContentLoaded", () => {
     deliveryTime.textContent = getAverageDeliveryTime();
   }
 
+  function updateAuthUI() {
+    if (!authUserStatus) {
+      return;
+    }
+
+    if (!auth) {
+      authUserStatus.textContent = "Firebase auth not configured. Paste your Firebase keys first.";
+      if (logoutButton) {
+        logoutButton.hidden = true;
+      }
+      return;
+    }
+
+    if (!state.authReady) {
+      authUserStatus.textContent = "Checking sign-in state...";
+      if (logoutButton) {
+        logoutButton.hidden = true;
+      }
+      return;
+    }
+
+    if (state.user) {
+      authUserStatus.textContent = `Signed in as ${state.user.name} (${state.user.email}).`;
+      if (logoutButton) {
+        logoutButton.hidden = false;
+      }
+      setFormStatus(loginForm, `Logged in as ${state.user.name}.`);
+      setFormStatus(signupForm, `Account ready for ${state.user.email}.`);
+    } else {
+      authUserStatus.textContent = "Not signed in.";
+      if (logoutButton) {
+        logoutButton.hidden = true;
+      }
+    }
+  }
+
   function addToCart(menuId) {
     state.cart[menuId] = (state.cart[menuId] || 0) + 1;
     saveState(STORAGE_KEYS.cart, state.cart);
@@ -415,32 +499,61 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function handleSignup(event) {
+  async function handleSignup(event) {
     event.preventDefault();
-    const formData = new FormData(signupForm);
-    const user = {
-      name: String(formData.get("name") || "").trim(),
-      email: String(formData.get("email") || "").trim(),
-    };
 
-    state.user = user;
-    saveState(STORAGE_KEYS.user, user);
-    setFormStatus(signupForm, `${user.name} registered successfully. You can now place orders in this demo.`);
-    signupForm.reset();
+    if (!auth || !signupForm) {
+      setFormStatus(signupForm, "Firebase auth is not configured yet.");
+      return;
+    }
+
+    const formData = new FormData(signupForm);
+    const name = String(formData.get("name") || "").trim();
+    const email = String(formData.get("email") || "").trim();
+    const password = String(formData.get("password") || "");
+
+    try {
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+
+      if (userCredential.user && name) {
+        await userCredential.user.updateProfile({ displayName: name });
+      }
+
+      setFormStatus(signupForm, `Account created for ${email}. You can now log in on any device.`);
+      signupForm.reset();
+    } catch (error) {
+      setFormStatus(signupForm, error.message || "Unable to create account.");
+    }
   }
 
-  function handleLogin(event) {
+  async function handleLogin(event) {
     event.preventDefault();
+
+    if (!auth || !loginForm) {
+      setFormStatus(loginForm, "Firebase auth is not configured yet.");
+      return;
+    }
+
     const formData = new FormData(loginForm);
     const email = String(formData.get("email") || "").trim();
+    const password = String(formData.get("password") || "");
 
-    if (state.user && state.user.email === email) {
-      setFormStatus(loginForm, `Logged in as ${state.user.name}.`);
-    } else if (state.user) {
-      setFormStatus(loginForm, `No account found for ${email}. Use the sign up form first.`);
-    } else {
-      setFormStatus(loginForm, "Create an account first using the sign up form.");
+    try {
+      await auth.signInWithEmailAndPassword(email, password);
+      setFormStatus(loginForm, `Logged in as ${email}.`);
+      loginForm.reset();
+    } catch (error) {
+      setFormStatus(loginForm, error.message || "Unable to log in.");
     }
+  }
+
+  async function handleLogout() {
+    if (!auth) {
+      return;
+    }
+
+    await auth.signOut();
+    setFormStatus(loginForm, "Logged out successfully.");
   }
 
   function handleCheckout() {
@@ -452,8 +565,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (!state.user) {
-      searchStatus.textContent = "Create an account before placing an order.";
-      document.querySelector("#signup")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      searchStatus.textContent = "Sign in before placing an order.";
+      document.querySelector("#login")?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
 
@@ -518,6 +631,7 @@ document.addEventListener("DOMContentLoaded", () => {
   checkoutButton.addEventListener("click", handleCheckout);
   signupForm?.addEventListener("submit", handleSignup);
   loginForm?.addEventListener("submit", handleLogin);
+  logoutButton?.addEventListener("click", handleLogout);
 
   navAnchors.forEach((anchor) => {
     anchor.addEventListener("click", (event) => {
@@ -539,10 +653,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   updateHeroStats();
+  updateAuthUI();
   renderRestaurants();
   renderCart();
-
-  if (state.user && signupForm) {
-    setFormStatus(signupForm, `${state.user.name} is already registered on this browser.`);
-  }
 });
