@@ -3,13 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>First Git </title>
-<link rel="stylesheet" href="assets/css/style.css">
+    <title>Zomato Online Order Food Site</title>
+    <link rel="stylesheet" href="/Git-course-/assets/css/style.css">
 </head>
 <body>
-    <p>this is my first git repo <button> git </button> </p>
-    <br>
-    <a href="https://www.google.com/?zx=1774618585243&no_sw_cr=1" target="_blank"> Google </a>
+    <header class="site-header">
+        <a class="brand" href="./index.html" aria-label="Zomato home">Zomato</a>
+        <nav aria-label="Primary navigation">
+            <ul class="nav-list">
+                <li><a href="./index.html">Home</a></li>
+                <li><a href="./pages/portfolio.html">Add Restaurant</a></li>
+                <li><a href="#login">Login</a></li>
+                <li><a href="#signup">Sign Up</a></li>
+            </ul>
+        </nav>
+    </header>
 
+    <main>
+        <section class="hero">
+            <span class="hero-badge">Food delivery in minutes</span>
+            <h1>Discover the best food and drinks in one place</h1>
+            <p>Search restaurants, cuisines, and dishes from a clean demo landing page.</p>
+
+            <form class="search-form" aria-label="Food search form">
+                <label class="sr-only" for="search">Search for restaurant, cuisine, or dish</label>
+                <input
+                    id="search"
+                    name="search"
+                    type="text"
+                    placeholder="Search for restaurant, cuisine or a dish"
+                >
+                <button type="submit">Search</button>
+            </form>
+        </section>
+
+        <section class="features">
+            <div class="section-heading">
+                <span>Why people order with us</span>
+                <h2>Built for fast, simple food delivery</h2>
+            </div>
+
+            <div class="card-container">
+                <article class="card">
+                    <div class="card-icon" aria-hidden="true">30</div>
+                    <h3>Fast Delivery</h3>
+                    <p>Fresh meals delivered quickly with live order updates.</p>
+                </article>
+
+                <article class="card">
+                    <div class="card-icon" aria-hidden="true">99+</div>
+                    <h3>Wide Variety</h3>
+                    <p>Browse local restaurants, snacks, desserts, and full meals.</p>
+                </article>
+
+                <article class="card">
+                    <div class="card-icon" aria-hidden="true">%</div>
+                    <h3>Best Offers</h3>
+                    <p>Save more with regular deals, bundles, and exclusive discounts.</p>
+                </article>
+            </div>
+        </section>
+
+        <section id="login" class="sr-only" aria-label="Login placeholder">
+            <h2>Login</h2>
+            <p>Login section placeholder.</p>
+        </section>
+
+        <section id="signup" class="sr-only" aria-label="Sign up placeholder">
+            <h2>Sign Up</h2>
+            <p>Sign up section placeholder.</p>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <p>&copy; 2026 Zomato demo. All rights reserved.</p>
+    </footer>
+
+    <script src="/Git-course-/assets/js/script.js"></script>
 </body>
 </html>
