@@ -1,16 +1,22 @@
 const crypto = require("crypto");
-const { getStore } = require("@netlify/blobs");
 const restaurants = require("../../backend/data/restaurants.json");
 
 const DELIVERY_FEE = 40;
-const store = getStore({ name: "quickbite", consistency: "strong" });
+const GITHUB_REPO = process.env.GITHUB_REPO || "abhimishra0345/Git-course-";
+const DATA_BRANCH = process.env.DATA_BRANCH || "app-data";
+const DATA_PATH = process.env.DATA_PATH || ".quickbite/store.enc";
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
+const STORE_SECRET = process.env.STORE_SECRET || "";
 
 exports.handler = async function handler(event) {
   try {
     const path = event.path.replace(/^\/\.netlify\/functions\/api/, "").replace(/\/$/, "") || "/";
 
     if (path === "/api/health" && event.httpMethod === "GET") {
-      return json(200, { status: "ok" });
+      return json(200, {
+        status: "ok",
+        storageConfigured: Boolean(GITHUB_TOKEN && STORE_SECRET),
+      });
     }
 
     if (path === "/api/restaurants" && event.httpMethod === "GET") {
@@ -173,11 +179,14 @@ function parseBody(rawBody) {
 }
 
 async function readCollection(key) {
-  return (await store.get(key, { type: "json" })) || [];
+  const { data } = await readStore();
+  return Array.isArray(data[key]) ? data[key] : [];
 }
 
 async function writeCollection(key, value) {
-  await store.setJSON(key, value);
+  const current = await readStore();
+  current.data[key] = value;
+  await writeStore(current.data, current.sha, `Update ${key}`);
 }
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
@@ -245,4 +254,122 @@ function buildOrderItems(items) {
   });
 
   return built;
+}
+
+async function readStore() {
+  ensureStorageConfig();
+
+  const response = await githubRequest(
+    `https://api.github.com/repos/${GITHUB_REPO}/contents/${DATA_PATH}?ref=${encodeURIComponent(DATA_BRANCH)}`,
+    { method: "GET" },
+    true
+  );
+
+  if (response.status === 404) {
+    return {
+      sha: null,
+      data: {
+        users: [],
+        sessions: [],
+        orders: [],
+      },
+    };
+  }
+
+  if (!response.ok) {
+    throw new Error(`Unable to read app storage: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  const content = Buffer.from(String(payload.content || "").replace(/\n/g, ""), "base64").toString("utf8");
+
+  return {
+    sha: payload.sha,
+    data: decryptStore(content),
+  };
+}
+
+async function writeStore(data, sha, message) {
+  ensureStorageConfig();
+
+  const encrypted = encryptStore(data);
+  const body = {
+    message,
+    branch: DATA_BRANCH,
+    content: Buffer.from(encrypted, "utf8").toString("base64"),
+  };
+
+  if (sha) {
+    body.sha = sha;
+  }
+
+  const response = await githubRequest(
+    `https://api.github.com/repos/${GITHUB_REPO}/contents/${DATA_PATH}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }
+  );
+
+  if (!response.ok) {
+    const payload = await response.text();
+    throw new Error(`Unable to write app storage: ${response.status} ${payload}`);
+  }
+}
+
+function ensureStorageConfig() {
+  if (!GITHUB_TOKEN || !STORE_SECRET) {
+    throw new Error("Deployed storage is not configured.");
+  }
+}
+
+function encryptStore(data) {
+  const key = crypto.createHash("sha256").update(STORE_SECRET).digest();
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const encrypted = Buffer.concat([cipher.update(JSON.stringify(data), "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+
+  return JSON.stringify({
+    iv: iv.toString("base64"),
+    tag: tag.toString("base64"),
+    data: encrypted.toString("base64"),
+  });
+}
+
+function decryptStore(payload) {
+  const parsed = JSON.parse(payload);
+  const key = crypto.createHash("sha256").update(STORE_SECRET).digest();
+  const decipher = crypto.createDecipheriv(
+    "aes-256-gcm",
+    key,
+    Buffer.from(parsed.iv, "base64")
+  );
+
+  decipher.setAuthTag(Buffer.from(parsed.tag, "base64"));
+  const decrypted = Buffer.concat([
+    decipher.update(Buffer.from(parsed.data, "base64")),
+    decipher.final(),
+  ]);
+
+  return JSON.parse(decrypted.toString("utf8"));
+}
+
+async function githubRequest(url, options, allowNotFound = false) {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${GITHUB_TOKEN}`,
+      Accept: "application/vnd.github+json",
+      "Content-Type": "application/json",
+      "User-Agent": "quickbite-netlify-function",
+      ...(options && options.headers ? options.headers : {}),
+    },
+  });
+
+  if (allowNotFound && response.status === 404) {
+    return response;
+  }
+
+  return response;
 }
