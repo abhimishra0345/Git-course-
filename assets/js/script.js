@@ -33,6 +33,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const paymentReference = document.querySelector("#payment-reference");
   const paymentMessage = document.querySelector("#payment-message");
   const paymentClose = document.querySelector("#payment-close");
+  const adminLoginForm = document.querySelector("#admin-login-form");
+  const adminStatus = document.querySelector("#admin-status");
+  const adminLogoutButton = document.querySelector("#admin-logout-button");
+  const adminOrders = document.querySelector("#admin-orders");
   const navLinks = Array.from(document.querySelectorAll('.nav-list a[href^="#"]'));
 
   if (
@@ -56,16 +60,19 @@ document.addEventListener("DOMContentLoaded", () => {
     user: null,
     orders: [],
     pendingOrder: null,
+    adminToken: localStorage.getItem("quickbite-admin-token") || "",
+    adminOrders: [],
   };
 
   attachStatus(signupForm);
   attachStatus(loginForm);
+  attachStatus(adminLoginForm);
 
   initialize();
 
   async function initialize() {
     bindEvents();
-    await Promise.all([loadRestaurants(), restoreSession()]);
+    await Promise.all([loadRestaurants(), restoreSession(), restoreAdminSession()]);
     renderAll();
   }
 
@@ -144,6 +151,9 @@ document.addEventListener("DOMContentLoaded", () => {
     checkoutButton.addEventListener("click", handleCheckout);
     paymentForm?.addEventListener("submit", handlePaymentSubmit);
     paymentClose?.addEventListener("click", closePaymentModal);
+    adminLoginForm?.addEventListener("submit", handleAdminLogin);
+    adminLogoutButton?.addEventListener("click", handleAdminLogout);
+    adminOrders?.addEventListener("click", handleAdminAction);
     paymentModal?.addEventListener("click", (event) => {
       if (event.target === paymentModal) {
         closePaymentModal();
@@ -222,6 +232,34 @@ document.addEventListener("DOMContentLoaded", () => {
     renderOrders();
   }
 
+  async function restoreAdminSession() {
+    if (!state.adminToken) {
+      renderAdminState();
+      renderAdminOrders();
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/admin/orders`, {
+        headers: { Authorization: `Bearer ${state.adminToken}` },
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Admin session expired.");
+      }
+
+      state.adminOrders = payload.orders || [];
+    } catch {
+      state.adminToken = "";
+      state.adminOrders = [];
+      localStorage.removeItem("quickbite-admin-token");
+    }
+
+    renderAdminState();
+    renderAdminOrders();
+  }
+
   async function loadOrders() {
     if (!state.token) {
       state.orders = [];
@@ -246,6 +284,8 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCart();
     renderAuthState();
     renderOrders();
+    renderAdminState();
+    renderAdminOrders();
   }
 
   function renderHighlights() {
@@ -507,6 +547,76 @@ document.addEventListener("DOMContentLoaded", () => {
       .join("");
   }
 
+  function renderAdminState() {
+    if (state.adminToken) {
+      adminStatus.textContent = "Admin signed in.";
+      adminLogoutButton.hidden = false;
+    } else {
+      adminStatus.textContent = "Admin not signed in.";
+      adminLogoutButton.hidden = true;
+    }
+  }
+
+  function renderAdminOrders() {
+    if (!state.adminToken) {
+      adminOrders.innerHTML = `
+        <article class="empty-state">
+          <strong>Login as admin to review orders.</strong>
+          <p>Paid QR orders and fulfillment actions will appear here.</p>
+        </article>
+      `;
+      return;
+    }
+
+    if (!state.adminOrders.length) {
+      adminOrders.innerHTML = `
+        <article class="empty-state">
+          <strong>No orders yet.</strong>
+          <p>New customer orders will appear here automatically.</p>
+        </article>
+      `;
+      return;
+    }
+
+    adminOrders.innerHTML = state.adminOrders
+      .map(
+        (order) => `
+          <article class="admin-order-card">
+            <div class="order-head">
+              <div>
+                <strong>Order #${order.id}</strong>
+                <p>${order.userName} · ${order.userEmail}</p>
+              </div>
+              <strong>Rs. ${order.total}</strong>
+            </div>
+
+            <div class="order-meta">
+              <span>${order.status}</span>
+              ${order.paymentReference ? `<span>UTR ${order.paymentReference}</span>` : ""}
+              <span>${new Date(order.createdAt).toLocaleString()}</span>
+            </div>
+
+            <div class="order-items">
+              ${order.items.map((item) => `${item.name} x${item.quantity}`).join(", ")}
+            </div>
+
+            <div class="admin-actions">
+              ${["confirmed", "preparing", "out_for_delivery", "delivered", "rejected"]
+                .map(
+                  (status) => `
+                    <button type="button" class="ghost-button" data-admin-action="status" data-order-id="${order.id}" data-status="${status}">
+                      ${status.replace(/_/g, " ")}
+                    </button>
+                  `
+                )
+                .join("")}
+            </div>
+          </article>
+        `
+      )
+      .join("");
+  }
+
   async function handleSignup(event) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -580,6 +690,84 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAuthState();
     renderOrders();
     setCartMessage("Logged out.");
+  }
+
+  async function handleAdminLogin(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch(`${API_BASE}/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: String(formData.get("email") || "").trim(),
+          password: String(formData.get("password") || ""),
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "Unable to login as admin.");
+      }
+
+      state.adminToken = payload.token;
+      localStorage.setItem("quickbite-admin-token", payload.token);
+      state.adminOrders = payload.orders || [];
+      form.reset();
+      setFormStatus(form, "Admin login successful.");
+      renderAdminState();
+      renderAdminOrders();
+    } catch (error) {
+      setFormStatus(form, error.message || "Unable to login as admin.");
+    }
+  }
+
+  function handleAdminLogout() {
+    state.adminToken = "";
+    state.adminOrders = [];
+    localStorage.removeItem("quickbite-admin-token");
+    renderAdminState();
+    renderAdminOrders();
+  }
+
+  async function handleAdminAction(event) {
+    const button = event.target.closest("[data-admin-action='status']");
+    if (!button || !state.adminToken) {
+      return;
+    }
+
+    const orderId = button.dataset.orderId;
+    const status = button.dataset.status;
+    if (!orderId || !status) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/admin/orders/${orderId}/status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${state.adminToken}`,
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "Unable to update status.");
+      }
+
+      state.adminOrders = payload.orders || [];
+      renderAdminOrders();
+      if (state.user) {
+        await loadOrders();
+        renderOrders();
+      }
+    } catch (error) {
+      adminStatus.textContent = error.message || "Unable to update status.";
+    }
   }
 
   async function handleCheckout() {

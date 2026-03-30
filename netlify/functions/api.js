@@ -7,6 +7,8 @@ const DATA_BRANCH = process.env.DATA_BRANCH || "app-data";
 const DATA_PATH = process.env.DATA_PATH || ".quickbite/store.enc";
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
 const STORE_SECRET = process.env.STORE_SECRET || "";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@quickbite.local";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Admin@12345";
 
 exports.handler = async function handler(event) {
   try {
@@ -95,6 +97,44 @@ exports.handler = async function handler(event) {
       return json(200, { user: sanitizeUser(session.user) });
     }
 
+    if (path === "/api/admin/login" && event.httpMethod === "POST") {
+      const body = parseBody(event.body);
+      const email = String(body.email || "").trim().toLowerCase();
+      const password = String(body.password || "");
+
+      if (email !== ADMIN_EMAIL.toLowerCase() || password !== ADMIN_PASSWORD) {
+        return json(401, { error: "Invalid admin credentials." });
+      }
+
+      const token = createToken();
+      const adminSessions = await readCollection("adminSessions");
+      adminSessions.push({
+        token,
+        createdAt: new Date().toISOString(),
+      });
+      await writeCollection("adminSessions", adminSessions);
+
+      const users = await readCollection("users");
+      const orders = await readCollection("orders");
+      return json(200, {
+        token,
+        orders: buildAdminOrders(orders, users),
+      });
+    }
+
+    if (path === "/api/admin/orders" && event.httpMethod === "GET") {
+      const isAdmin = await getAdminSession(event.headers.authorization);
+      if (!isAdmin) {
+        return json(401, { error: "Unauthorized." });
+      }
+
+      const users = await readCollection("users");
+      const orders = await readCollection("orders");
+      return json(200, {
+        orders: buildAdminOrders(orders, users),
+      });
+    }
+
     if (path === "/api/orders" && event.httpMethod === "GET") {
       const session = await getSessionUser(event.headers.authorization);
       if (!session) {
@@ -175,6 +215,36 @@ exports.handler = async function handler(event) {
       await writeCollection("orders", orders);
 
       return json(200, { order });
+    }
+
+    const adminStatusMatch = path.match(/^\/api\/admin\/orders\/([^/]+)\/status$/);
+    if (adminStatusMatch && event.httpMethod === "POST") {
+      const isAdmin = await getAdminSession(event.headers.authorization);
+      if (!isAdmin) {
+        return json(401, { error: "Unauthorized." });
+      }
+
+      const body = parseBody(event.body);
+      const status = String(body.status || "").trim();
+      if (!status) {
+        return json(400, { error: "Status is required." });
+      }
+
+      const orders = await readCollection("orders");
+      const order = orders.find((entry) => entry.id === adminStatusMatch[1]);
+
+      if (!order) {
+        return json(404, { error: "Order not found." });
+      }
+
+      order.status = status;
+      order.updatedAt = new Date().toISOString();
+      await writeCollection("orders", orders);
+
+      const users = await readCollection("users");
+      return json(200, {
+        orders: buildAdminOrders(orders, users),
+      });
     }
 
     return json(404, { error: "Not found" });
@@ -261,6 +331,20 @@ async function getSessionUser(authorizationHeader = "") {
   return { session, user };
 }
 
+async function getAdminSession(authorizationHeader = "") {
+  if (!authorizationHeader.startsWith("Bearer ")) {
+    return false;
+  }
+
+  const token = authorizationHeader.slice("Bearer ".length).trim();
+  if (!token) {
+    return false;
+  }
+
+  const sessions = await readCollection("adminSessions");
+  return sessions.some((entry) => entry.token === token);
+}
+
 function buildOrderItems(items) {
   const built = [];
 
@@ -282,6 +366,20 @@ function buildOrderItems(items) {
   });
 
   return built;
+}
+
+function buildAdminOrders(orders, users) {
+  return orders
+    .slice()
+    .reverse()
+    .map((order) => {
+      const user = users.find((entry) => entry.id === order.userId);
+      return {
+        ...order,
+        userName: user ? user.name : "Unknown user",
+        userEmail: user ? user.email : "Unknown email",
+      };
+    });
 }
 
 async function readStore() {

@@ -23,6 +23,9 @@ const restaurantsPath = path.join(DATA_DIR, "restaurants.json");
 const usersPath = path.join(DATA_DIR, "users.json");
 const ordersPath = path.join(DATA_DIR, "orders.json");
 const sessionsPath = path.join(DATA_DIR, "sessions.json");
+const adminSessionsPath = path.join(DATA_DIR, "admin-sessions.json");
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@quickbite.local";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Admin@12345";
 
 function readJson(filePath, fallback) {
   try {
@@ -139,6 +142,16 @@ function getSessionUser(req) {
 
   const user = users.find((entry) => entry.id === session.userId);
   return user ? { token, user } : null;
+}
+
+function getAdminSession(req) {
+  const token = getBearerToken(req);
+  if (!token) {
+    return false;
+  }
+
+  const sessions = readJson(adminSessionsPath, []);
+  return sessions.some((entry) => entry.token === token);
 }
 
 function buildOrderItems(items, restaurants) {
@@ -285,6 +298,51 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (pathname === "/api/admin/login" && req.method === "POST") {
+    try {
+      const body = await parseBody(req);
+      const email = String(body.email || "").trim().toLowerCase();
+      const password = String(body.password || "");
+
+      if (email !== ADMIN_EMAIL.toLowerCase() || password !== ADMIN_PASSWORD) {
+        sendJson(res, 401, { error: "Invalid admin credentials." });
+        return;
+      }
+
+      const token = createToken();
+      const adminSessions = readJson(adminSessionsPath, []);
+      adminSessions.push({
+        token,
+        createdAt: new Date().toISOString(),
+      });
+      writeJson(adminSessionsPath, adminSessions);
+
+      const users = readJson(usersPath, []);
+      const orders = readJson(ordersPath, []);
+      sendJson(res, 200, {
+        token,
+        orders: buildAdminOrders(orders, users),
+      });
+    } catch (error) {
+      sendJson(res, 400, { error: error.message || "Unable to login as admin." });
+    }
+    return;
+  }
+
+  if (pathname === "/api/admin/orders" && req.method === "GET") {
+    if (!getAdminSession(req)) {
+      sendJson(res, 401, { error: "Unauthorized." });
+      return;
+    }
+
+    const users = readJson(usersPath, []);
+    const orders = readJson(ordersPath, []);
+    sendJson(res, 200, {
+      orders: buildAdminOrders(orders, users),
+    });
+    return;
+  }
+
   if (pathname === "/api/orders" && req.method === "GET") {
     const session = getSessionUser(req);
     if (!session) {
@@ -386,9 +444,59 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  const adminStatusMatch = pathname.match(/^\/api\/admin\/orders\/([^/]+)\/status$/);
+  if (adminStatusMatch && req.method === "POST") {
+    try {
+      if (!getAdminSession(req)) {
+        sendJson(res, 401, { error: "Unauthorized." });
+        return;
+      }
+
+      const body = await parseBody(req);
+      const status = String(body.status || "").trim();
+      if (!status) {
+        sendJson(res, 400, { error: "Status is required." });
+        return;
+      }
+
+      const orders = readJson(ordersPath, []);
+      const order = orders.find((entry) => entry.id === adminStatusMatch[1]);
+      if (!order) {
+        sendJson(res, 404, { error: "Order not found." });
+        return;
+      }
+
+      order.status = status;
+      order.updatedAt = new Date().toISOString();
+      writeJson(ordersPath, orders);
+
+      const users = readJson(usersPath, []);
+      sendJson(res, 200, {
+        orders: buildAdminOrders(orders, users),
+      });
+    } catch (error) {
+      sendJson(res, 400, { error: error.message || "Unable to update order status." });
+    }
+    return;
+  }
+
   serveStatic(req, res, pathname);
 });
 
 server.listen(PORT, () => {
   console.log(`QuickBite server running on http://localhost:${PORT}`);
 });
+
+function buildAdminOrders(orders, users) {
+  return orders
+    .slice()
+    .reverse()
+    .map((order) => {
+      const user = users.find((entry) => entry.id === order.userId);
+      return {
+        ...order,
+        userName: user ? user.name : "Unknown user",
+        userEmail: user ? user.email : "Unknown email",
+      };
+    });
+}

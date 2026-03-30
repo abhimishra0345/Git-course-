@@ -180,6 +180,36 @@
                 </div>
                 <div id="order-history" class="order-history" aria-live="polite"></div>
             </section>
+
+            <section id="admin" class="surface-card admin-panel">
+                <div class="section-heading">
+                    <span>Admin</span>
+                    <h2>Review customer payments</h2>
+                </div>
+
+                <div class="admin-grid">
+                    <form id="admin-login-form" class="auth-form admin-login-form">
+                        <h3>Admin login</h3>
+                        <label>
+                            <span>Email</span>
+                            <input type="email" name="email" placeholder="admin@quickbite.local" required>
+                        </label>
+                        <label>
+                            <span>Password</span>
+                            <input type="password" name="password" placeholder="Admin password" required>
+                        </label>
+                        <button type="submit">Login as admin</button>
+                    </form>
+
+                    <section class="admin-orders-shell">
+                        <div class="auth-session">
+                            <p id="admin-status" class="muted-note">Admin not signed in.</p>
+                            <button id="admin-logout-button" class="ghost-button" type="button" hidden>Logout</button>
+                        </div>
+                        <div id="admin-orders" class="admin-orders" aria-live="polite"></div>
+                    </section>
+                </div>
+            </section>
         </main>
 
         <footer class="site-footer">

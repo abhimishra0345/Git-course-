@@ -389,7 +389,8 @@ button:focus-visible {
 
 .restaurant-grid,
 .cart-items,
-.order-history {
+.order-history,
+.admin-orders {
   display: grid;
   gap: 1rem;
   margin-top: 1.25rem;
@@ -578,6 +579,41 @@ button:focus-visible {
   padding: 0 0 2rem;
   text-align: center;
   color: var(--muted);
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.admin-orders-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-order-card {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.admin-order-card .order-meta {
+  margin-top: 0.7rem;
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+}
+
+.admin-actions button {
+  width: auto;
+  padding: 0.72rem 0.9rem;
 }
 
 .payment-modal {
@@ -777,6 +813,10 @@ input:focus-visible {
   }
 
   .payment-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-grid {
     grid-template-columns: 1fr;
   }
 }
