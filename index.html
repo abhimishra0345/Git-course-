@@ -3,186 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zomato Online Order Food Site</title>
+    <title>QuickBite | Food Ordering Platform</title>
     <link rel="stylesheet" href="./assets/css/style.css">
 </head>
 <body>
-    <header class="site-header">
-        <a class="brand" href="./index.html" aria-label="Zomato home">Zomato</a>
-        <nav aria-label="Primary navigation">
-        
-            <ul class="nav-list">
-                <li><a href="./index.html">Home</a></li>
-                <li><a href="#restaurants">Restaurants</a></li>
-                <li><a href="#login">Login</a></li>
-                <li><a href="#signup">Sign Up</a></li> 
-            </ul>
-        </nav>
-    </header>
+    <div class="page-shell">
+        <header class="site-header">
+            <a class="brand" href="./index.html" aria-label="QuickBite home">
+                <span class="brand-mark">QB</span>
+                <span class="brand-copy">
+                    <strong>QuickBite</strong>
+                    <small>Order smarter</small>
+                </span>
+            </a>
 
-    <main>
-        <section class="hero">
-            <span class="hero-badge">Food delivery in minutes</span>
-            <h1>Discover the best food and drinks in one place</h1>
-            <p>Search restaurants, cuisines, and dishes from a clean demo landing page.</p>
+            <nav aria-label="Primary navigation">
+                <ul class="nav-list">
+                    <li><a href="#discover">Discover</a></li>
+                    <li><a href="#restaurants">Restaurants</a></li>
+                    <li><a href="#account">Account</a></li>
+                    <li><a href="#orders">Orders</a></li>
+                </ul>
+            </nav>
 
-            <form class="search-form" aria-label="Food search form">
-                <label class="sr-only" for="search">Search for restaurant, cuisine, or dish</label>
-                <input
-                    id="search"
-                    name="search"
-                    type="text"
-                    placeholder="Search for restaurant, cuisine or a dish"
-                >
-                <button type="submit">Search</button>
-            </form>
+            <button id="mobile-nav-toggle" class="mobile-nav-toggle" type="button" aria-expanded="false">
+                Menu
+            </button>
+        </header>
 
-            <div class="hero-stats" aria-label="Platform highlights">
-                <article class="stat-pill">
-                    <strong id="restaurant-count">0</strong>
-                    <span>Restaurants</span>
-                </article>
-                <article class="stat-pill">
-                    <strong id="delivery-time">0-0 min</strong>
-                    <span>Delivery</span>
-                </article>
-                <article class="stat-pill">
-                    <strong id="cart-total">Rs. 0</strong>
-                    <span>Cart total</span>
-                </article>
-            </div>
-        </section>
+        <main>
+            <section id="discover" class="hero-panel">
+                <div class="hero-copy">
+                    <span class="eyebrow">Live restaurant network</span>
+                    <h1>One place to discover, order, and track local food that feels worth opening twice a day.</h1>
+                    <p>
+                        Search real restaurant data, create an account, add dishes to cart, and place orders through a local backend.
+                    </p>
 
-        <section class="features">
-            <div class="section-heading">
-                <span>Why people order with us</span>
-                <h2>Built for fast, simple food delivery</h2>
-            </div>
+                    <form class="search-form" aria-label="Search restaurants">
+                        <label class="sr-only" for="search">Search for restaurant, cuisine, or dish</label>
+                        <input
+                            id="search"
+                            name="search"
+                            type="text"
+                            placeholder="Try biryani, burgers, pasta, desserts..."
+                        >
+                        <button type="submit">Search</button>
+                    </form>
 
-            <div class="card-container">
-                <article class="card">
-                    <div class="card-icon" aria-hidden="true">30</div>
-                    <h3>Fast Delivery</h3>
-                    <p>Fresh meals delivered quickly with live order updates.</p>
-                </article>
-
-                <article class="card">
-                    <div class="card-icon" aria-hidden="true">99+</div>
-                    <h3>Wide Variety</h3>
-                    <p>Browse local restaurants, snacks, desserts, and full meals.</p>
-                </article>
-
-                <article class="card">
-                    <div class="card-icon" aria-hidden="true">%</div>
-                    <h3>Best Offers</h3>
-                    <p>Save more with regular deals, bundles, and exclusive discounts.</p>
-                </article>
-            </div>
-        </section>
-
-        <section id="restaurants" class="catalog" aria-label="Restaurant catalog">
-            <div class="section-heading">
-                <span>Order now</span>
-                <h2>Popular restaurants near you</h2>
-            </div>
-
-            <div class="catalog-toolbar">
-                <div class="filter-group" aria-label="Cuisine filters">
-                    <button type="button" class="filter-chip is-active" data-filter="all">All</button>
-                    <button type="button" class="filter-chip" data-filter="Indian">Indian</button>
-                    <button type="button" class="filter-chip" data-filter="Italian">Italian</button>
-                    <button type="button" class="filter-chip" data-filter="Fast Food">Fast Food</button>
-                    <button type="button" class="filter-chip" data-filter="Dessert">Dessert</button>
-                    <button type="button" class="filter-chip" data-filter="Healthy">Healthy</button>
+                    <div class="hero-stats" aria-label="Platform metrics">
+                        <article class="stat-card">
+                            <strong id="restaurant-count">0</strong>
+                            <span>Restaurants</span>
+                        </article>
+                        <article class="stat-card">
+                            <strong id="menu-count">0</strong>
+                            <span>Menu items</span>
+                        </article>
+                        <article class="stat-card">
+                            <strong id="delivery-time">0 min</strong>
+                            <span>Avg delivery</span>
+                        </article>
+                    </div>
                 </div>
-                <p id="results-summary" class="results-summary" aria-live="polite"></p>
-            </div>
 
-            <div id="restaurant-list" class="restaurant-grid" aria-live="polite"></div>
-        </section>
+                <aside class="hero-aside">
+                    <div class="hero-preview">
+                        <p class="preview-label">Tonight's fast picks</p>
+                        <div id="featured-spotlight" class="featured-spotlight"></div>
+                    </div>
+                </aside>
+            </section>
 
-        <section class="order-shell" aria-label="Order details">
-            <section class="cart-panel">
+            <section class="feature-strip">
+                <article class="feature-card">
+                    <span>01</span>
+                    <h2>Backend powered catalog</h2>
+                    <p>Restaurants and menu data are loaded from the API, not hardcoded into the page.</p>
+                </article>
+                <article class="feature-card">
+                    <span>02</span>
+                    <h2>Real account flow</h2>
+                    <p>Signup, login, sessions, and order placement now run through backend endpoints.</p>
+                </article>
+                <article class="feature-card">
+                    <span>03</span>
+                    <h2>Order history</h2>
+                    <p>Signed-in users can review earlier orders without rebuilding state manually.</p>
+                </article>
+            </section>
+
+            <section id="restaurants" class="content-grid">
+                <section class="catalog-panel">
+                    <div class="section-heading">
+                        <span>Restaurants</span>
+                        <h2>Browse available kitchens</h2>
+                    </div>
+
+                    <div class="catalog-toolbar">
+                        <div id="filter-group" class="filter-group" aria-label="Cuisine filters"></div>
+                        <p id="results-summary" class="results-summary" aria-live="polite"></p>
+                    </div>
+
+                    <div id="restaurant-list" class="restaurant-grid" aria-live="polite"></div>
+                </section>
+
+                <aside class="sidebar-stack">
+                    <section class="surface-card cart-panel">
+                        <div class="section-heading">
+                            <span>Current cart</span>
+                            <h2>Ready to checkout</h2>
+                        </div>
+
+                        <div id="cart-items" class="cart-items"></div>
+
+                        <div class="cart-totals">
+                            <div><span>Subtotal</span><strong id="subtotal-amount">Rs. 0</strong></div>
+                            <div><span>Delivery</span><strong id="delivery-fee">Rs. 40</strong></div>
+                            <div class="grand-total"><span>Total</span><strong id="grand-total">Rs. 0</strong></div>
+                        </div>
+
+                        <button id="checkout-button" type="button">Place order</button>
+                        <p id="cart-message" class="status-message" aria-live="polite"></p>
+                    </section>
+
+                    <section id="account" class="surface-card auth-panel">
+                        <div class="section-heading">
+                            <span>Account</span>
+                            <h2>Sign in to order</h2>
+                        </div>
+
+                        <div class="auth-session">
+                            <p id="auth-user-status" class="muted-note">Not signed in.</p>
+                            <button id="logout-button" class="ghost-button" type="button" hidden>Logout</button>
+                        </div>
+
+                        <div class="auth-grid">
+                            <form id="signup-form" class="auth-form">
+                                <h3>Create account</h3>
+                                <label>
+                                    <span>Full name</span>
+                                    <input type="text" name="name" placeholder="Your full name" required>
+                                </label>
+                                <label>
+                                    <span>Email</span>
+                                    <input type="email" name="email" placeholder="you@example.com" required>
+                                </label>
+                                <label>
+                                    <span>Password</span>
+                                    <input type="password" name="password" placeholder="Minimum 6 characters" minlength="6" required>
+                                </label>
+                                <button type="submit">Create account</button>
+                            </form>
+
+                            <form id="login-form" class="auth-form">
+                                <h3>Login</h3>
+                                <label>
+                                    <span>Email</span>
+                                    <input type="email" name="email" placeholder="you@example.com" required>
+                                </label>
+                                <label>
+                                    <span>Password</span>
+                                    <input type="password" name="password" placeholder="Your password" minlength="6" required>
+                                </label>
+                                <button type="submit">Login</button>
+                            </form>
+                        </div>
+                    </section>
+                </aside>
+            </section>
+
+            <section id="orders" class="surface-card order-history-panel">
                 <div class="section-heading">
-                    <span>Your order</span>
-                    <h2>Cart summary</h2>
+                    <span>Orders</span>
+                    <h2>Your recent activity</h2>
                 </div>
-
-                <div id="cart-items" class="cart-items"></div>
-
-                <div class="cart-totals">
-                    <div>
-                        <span>Subtotal</span>
-                        <strong id="subtotal-amount">Rs. 0</strong>
-                    </div>
-                    <div>
-                        <span>Delivery</span>
-                        <strong id="delivery-fee">Rs. 40</strong>
-                    </div>
-                    <div class="cart-grand-total">
-                        <span>Total</span>
-                        <strong id="grand-total">Rs. 0</strong>
-                    </div>
-                </div>
-
-                <button id="checkout-button" type="button">Place Order</button>
+                <div id="order-history" class="order-history" aria-live="polite"></div>
             </section>
+        </main>
 
-            <section class="auth-grid" aria-label="Account actions">
-                <section id="login" class="auth-card">
-                    <div class="section-heading">
-                        <span>Welcome back</span>
-                        <h2>Login</h2>
-                    </div>
-                    <form id="login-form" class="auth-form">
-                        <label>
-                            <span>Email</span>
-                            <input type="email" name="email" placeholder="you@example.com" required>
-                        </label>
-                        <label>
-                            <span>Password</span>
-                            <input type="password" name="password" placeholder="Enter password" minlength="6" required>
-                        </label>
-                        <button type="submit">Login</button>
-                    </form>
-                    <div id="auth-session" class="auth-session" aria-live="polite">
-                        <p id="auth-user-status" class="muted-note">Not signed in.</p>
-                        <button id="logout-button" type="button" class="ghost-button" hidden>Logout</button>
-                    </div>
-                </section>
+        <footer class="site-footer">
+            <p>QuickBite demo platform with local API backend.</p>
+        </footer>
+    </div>
 
-                <section id="signup" class="auth-card">
-                    <div class="section-heading">
-                        <span>New here</span>
-                        <h2>Create account</h2>
-                    </div>
-                    <form id="signup-form" class="auth-form">
-                        <label>
-                            <span>Full name</span>
-                            <input type="text" name="name" placeholder="Your full name" required>
-                        </label>
-                        <label>
-                            <span>Email</span>
-                            <input type="email" name="email" placeholder="you@example.com" required>
-                        </label>
-                        <label>
-                            <span>Password</span>
-                            <input type="password" name="password" placeholder="Create password" minlength="6" required>
-                        </label>
-                        <button type="submit">Sign Up</button>
-                    </form>
-                </section>
-            </section>
-        </section>
-    </main>
-
-    <footer class="site-footer">
-        <p>&copy; 2026 Zomato demo. All rights reserved.</p>
-    </footer>
-
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="./assets/js/firebase-config.js"></script>
     <script src="./assets/js/script.js"></script>
 </body>
 </html>

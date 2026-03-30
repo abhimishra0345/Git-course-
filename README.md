@@ -1,45 +1,42 @@
-# ABHISHEK'S GIT HUB REPO.
-<br>
-Author - Abhishek
+# QuickBite
 
-## Deploy
+QuickBite is a food ordering demo with a redesigned frontend and a local Node backend.
 
-This project is a static site. You can deploy it directly from the repository with either Netlify or Vercel.
+## Features
 
-### Netlify
+- Responsive restaurant discovery UI
+- Backend-powered restaurant catalog
+- Account signup and login with persisted JSON storage
+- Session-based authentication using bearer tokens
+- Cart, checkout, and saved order history
+- Seeded restaurant and menu data
 
-- Import the GitHub repository in Netlify.
-- Build command: leave empty
-- Publish directory: `.`
-- Suggested site URL: `https://<your-site-name>.netlify.app`
+## Run locally
 
-### Vercel
+1. Open the project root.
+2. Start the backend server:
 
-- Import the GitHub repository in Vercel.
-- Framework preset: `Other`
-- Build command: leave empty
-- Output directory: `.`
-- Suggested site URL: `https://<your-project-name>.vercel.app`
+```bash
+npm start
+```
 
-### GitHub Pages
+3. Open:
 
-- Push the latest code to the `main` branch.
-- In GitHub, open `Settings > Pages`.
-- Set source to `Deploy from a branch`.
-- Choose `main` and `/root`.
-- URL pattern: `https://abhimishra0345.github.io/Git-course-/`
+```text
+http://localhost:3000
+```
 
-## Firebase Auth Setup
+## Backend API
 
-Cross-device login now uses Firebase Authentication instead of browser-only storage.
+- `GET /api/health`
+- `GET /api/restaurants`
+- `POST /api/auth/signup`
+- `POST /api/auth/login`
+- `GET /api/session`
+- `GET /api/orders`
+- `POST /api/orders`
 
-1. Create a Firebase project in the Firebase console.
-2. Add a Web app to that project.
-3. In `Authentication > Sign-in method`, enable `Email/Password`.
-4. Copy your Firebase web config into [firebase-config.js](/Users/abhishekmishra/Desktop/GH/Git-course-/assets/js/firebase-config.js).
-5. In `Authentication > Settings > Authorized domains`, add your deployed domains:
-   - `abhimishra0345.github.io`
-   - `git-course-food-demo.netlify.app`
-   - `git-course-food-demo.vercel.app`
+## Notes
 
-Until those keys are added, the UI will show that Firebase auth is not configured yet.
+- User data, sessions, and orders are stored in `backend/data/*.json`.
+- This app should be served through `backend/server.js` so the frontend can call the backend APIs.

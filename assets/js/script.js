@@ -1,221 +1,290 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const STORAGE_KEYS = {
-    cart: "zomato-demo-cart",
-  };
-
+  const API_BASE = "/api";
   const DELIVERY_FEE = 40;
-  const restaurants = [
-    {
-      id: "spice-story",
-      name: "Spice Story",
-      cuisine: "Indian",
-      rating: 4.7,
-      deliveryTime: "25-30 min",
-      costForTwo: 450,
-      offer: "20% OFF",
-      description: "Comfort Indian meals, biryani bowls, and smoky kebabs.",
-      menu: [
-        { id: "ss-biryani", name: "Chicken Biryani", price: 280, description: "Fragrant basmati rice with spiced chicken." },
-        { id: "ss-paneer", name: "Paneer Butter Masala", price: 250, description: "Creamy tomato gravy with soft paneer cubes." },
-      ],
-    },
-    {
-      id: "urban-pizza",
-      name: "Urban Pizza Co.",
-      cuisine: "Italian",
-      rating: 4.5,
-      deliveryTime: "30-35 min",
-      costForTwo: 550,
-      offer: "Buy 1 Get 1",
-      description: "Stone-baked pizzas, cheesy pasta, and garlic sides.",
-      menu: [
-        { id: "up-margherita", name: "Margherita Pizza", price: 320, description: "Classic mozzarella, basil, and tomato sauce." },
-        { id: "up-alfredo", name: "Creamy Alfredo Pasta", price: 290, description: "Rich white sauce pasta with herbs and cheese." },
-      ],
-    },
-    {
-      id: "burger-lab",
-      name: "Burger Lab",
-      cuisine: "Fast Food",
-      rating: 4.4,
-      deliveryTime: "20-25 min",
-      costForTwo: 400,
-      offer: "Free Fries",
-      description: "Loaded burgers, crunchy sides, and quick cravings.",
-      menu: [
-        { id: "bl-smash", name: "Double Smash Burger", price: 260, description: "Juicy double patty burger with house sauce." },
-        { id: "bl-wrap", name: "Crispy Chicken Wrap", price: 210, description: "Crispy chicken, lettuce, and smoky mayo." },
-      ],
-    },
-    {
-      id: "sweet-cloud",
-      name: "Sweet Cloud",
-      cuisine: "Dessert",
-      rating: 4.8,
-      deliveryTime: "18-22 min",
-      costForTwo: 300,
-      offer: "Flat Rs. 75 OFF",
-      description: "Cheesecakes, brownies, and late-night dessert boxes.",
-      menu: [
-        { id: "sc-cheesecake", name: "Blueberry Cheesecake", price: 190, description: "Creamy cheesecake with fresh blueberry glaze." },
-        { id: "sc-brownie", name: "Hot Chocolate Brownie", price: 170, description: "Dense brownie served with fudge drizzle." },
-      ],
-    },
-    {
-      id: "green-bowl",
-      name: "Green Bowl Kitchen",
-      cuisine: "Healthy",
-      rating: 4.6,
-      deliveryTime: "22-28 min",
-      costForTwo: 420,
-      offer: "Healthy Combo",
-      description: "Protein bowls, salads, wraps, and light meals.",
-      menu: [
-        { id: "gb-bowl", name: "Peri Peri Protein Bowl", price: 240, description: "Rice, grilled chicken, beans, and veggies." },
-        { id: "gb-salad", name: "Mediterranean Salad", price: 220, description: "Crisp greens, olives, feta, and lemon dressing." },
-      ],
-    },
-    {
-      id: "chai-adda",
-      name: "Chai Adda",
-      cuisine: "Indian",
-      rating: 4.3,
-      deliveryTime: "15-20 min",
-      costForTwo: 250,
-      offer: "Snacks Saver",
-      description: "Street-style chai, sandwiches, and evening snacks.",
-      menu: [
-        { id: "ca-tea", name: "Masala Chai Flask", price: 120, description: "Strong masala chai for two servings." },
-        { id: "ca-samosa", name: "Samosa Chaat", price: 150, description: "Crispy samosa topped with chutneys and curd." },
-      ],
-    },
-  ];
+  const STORAGE_KEYS = {
+    cart: "quickbite-cart",
+    token: "quickbite-token",
+  };
 
   const searchForm = document.querySelector(".search-form");
   const searchInput = document.querySelector("#search");
-  const heroBadge = document.querySelector(".hero-badge");
-  const heroDescription = document.querySelector(".hero p");
   const restaurantList = document.querySelector("#restaurant-list");
+  const filterGroup = document.querySelector("#filter-group");
   const resultsSummary = document.querySelector("#results-summary");
-  const filterChips = Array.from(document.querySelectorAll(".filter-chip"));
-  const cartItemsContainer = document.querySelector("#cart-items");
+  const featuredSpotlight = document.querySelector("#featured-spotlight");
+  const restaurantCount = document.querySelector("#restaurant-count");
+  const menuCount = document.querySelector("#menu-count");
+  const deliveryTime = document.querySelector("#delivery-time");
+  const cartItems = document.querySelector("#cart-items");
   const subtotalAmount = document.querySelector("#subtotal-amount");
   const deliveryFee = document.querySelector("#delivery-fee");
   const grandTotal = document.querySelector("#grand-total");
-  const cartTotal = document.querySelector("#cart-total");
-  const restaurantCount = document.querySelector("#restaurant-count");
-  const deliveryTime = document.querySelector("#delivery-time");
+  const cartMessage = document.querySelector("#cart-message");
   const checkoutButton = document.querySelector("#checkout-button");
-  const loginForm = document.querySelector("#login-form");
   const signupForm = document.querySelector("#signup-form");
+  const loginForm = document.querySelector("#login-form");
   const authUserStatus = document.querySelector("#auth-user-status");
   const logoutButton = document.querySelector("#logout-button");
-  const navAnchors = Array.from(document.querySelectorAll('.nav-list a[href^="#"]'));
+  const orderHistory = document.querySelector("#order-history");
+  const mobileNavToggle = document.querySelector("#mobile-nav-toggle");
+  const navLinks = Array.from(document.querySelectorAll('.nav-list a[href^="#"]'));
 
   if (
     !searchForm ||
     !searchInput ||
     !restaurantList ||
-    !cartItemsContainer ||
-    !subtotalAmount ||
-    !grandTotal ||
-    !cartTotal ||
+    !filterGroup ||
+    !cartItems ||
     !checkoutButton
   ) {
     return;
   }
 
-  const heroDefault = {
-    badge: heroBadge ? heroBadge.textContent.trim() : "",
-    description: heroDescription ? heroDescription.textContent.trim() : "",
-  };
-
   const state = {
+    restaurants: [],
+    filters: [],
+    activeFilter: "All",
     query: "",
-    activeFilter: "all",
-    cart: loadState(STORAGE_KEYS.cart, {}),
+    cart: loadJSON(STORAGE_KEYS.cart, {}),
+    token: localStorage.getItem(STORAGE_KEYS.token) || "",
     user: null,
-    authReady: false,
+    orders: [],
   };
 
-  const searchStatus = document.createElement("p");
-  searchStatus.className = "status-message";
-  searchStatus.setAttribute("role", "status");
-  searchStatus.setAttribute("aria-live", "polite");
-  searchForm.insertAdjacentElement("afterend", searchStatus);
+  attachStatus(signupForm);
+  attachStatus(loginForm);
 
-  attachFormStatus(loginForm);
-  attachFormStatus(signupForm);
+  initialize();
 
-  const auth = initializeFirebaseAuth();
-
-  function loadState(key, fallback) {
-    try {
-      const value = localStorage.getItem(key);
-      return value ? JSON.parse(value) : fallback;
-    } catch {
-      return fallback;
-    }
+  async function initialize() {
+    bindEvents();
+    await Promise.all([loadRestaurants(), restoreSession()]);
+    renderAll();
   }
 
-  function saveState(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
-  }
-
-  function formatCurrency(amount) {
-    return `Rs. ${amount}`;
-  }
-
-  function isFirebaseConfigured(config) {
-    if (!config) {
-      return false;
-    }
-
-    return ["apiKey", "authDomain", "projectId", "appId"].every((key) => {
-      const value = config[key];
-      return typeof value === "string" && value.trim() && !value.startsWith("PASTE_YOUR_");
+  function bindEvents() {
+    searchForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      state.query = searchInput.value.trim();
+      renderRestaurants();
     });
-  }
 
-  function initializeFirebaseAuth() {
-    const config = window.__FIREBASE_CONFIG__;
+    searchInput.addEventListener("input", () => {
+      state.query = searchInput.value.trim();
+      renderRestaurants();
+    });
 
-    if (!window.firebase || !isFirebaseConfigured(config)) {
-      const message = "Firebase auth is not configured yet. Add your Firebase keys in assets/js/firebase-config.js.";
-      setFormStatus(loginForm, message);
-      setFormStatus(signupForm, message);
-      if (authUserStatus) {
-        authUserStatus.textContent = "Firebase auth not configured.";
+    filterGroup.addEventListener("click", (event) => {
+      const chip = event.target.closest(".filter-chip");
+      if (!chip) {
+        return;
       }
-      return null;
-    }
-
-    if (!firebase.apps.length) {
-      firebase.initializeApp(config);
-    }
-
-    const authInstance = firebase.auth();
-    authInstance.onAuthStateChanged((user) => {
-      state.user = user
-        ? {
-            name: user.displayName || user.email || "User",
-            email: user.email || "",
-            uid: user.uid,
-          }
-        : null;
-      state.authReady = true;
-      updateAuthUI();
+      state.activeFilter = chip.dataset.filter || "All";
+      renderFilters();
+      renderRestaurants();
     });
 
-    return authInstance;
+    restaurantList.addEventListener("click", (event) => {
+      const button = event.target.closest(".add-to-cart");
+      if (!button) {
+        return;
+      }
+      const menuId = button.dataset.menuId;
+      if (!menuId) {
+        return;
+      }
+      state.cart[menuId] = (state.cart[menuId] || 0) + 1;
+      persistCart();
+      renderCart();
+      setCartMessage("Item added to cart.");
+    });
+
+    cartItems.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-cart-action]");
+      if (!button) {
+        return;
+      }
+
+      const menuId = button.dataset.menuId;
+      const action = button.dataset.cartAction;
+
+      if (!menuId || !action) {
+        return;
+      }
+
+      const current = state.cart[menuId] || 0;
+
+      if (action === "increase") {
+        state.cart[menuId] = current + 1;
+      } else if (action === "decrease") {
+        const next = current - 1;
+        if (next > 0) {
+          state.cart[menuId] = next;
+        } else {
+          delete state.cart[menuId];
+        }
+      } else if (action === "remove") {
+        delete state.cart[menuId];
+      }
+
+      persistCart();
+      renderCart();
+    });
+
+    signupForm?.addEventListener("submit", handleSignup);
+    loginForm?.addEventListener("submit", handleLogin);
+    logoutButton?.addEventListener("click", handleLogout);
+    checkoutButton.addEventListener("click", handleCheckout);
+
+    mobileNavToggle?.addEventListener("click", () => {
+      const nextExpanded = mobileNavToggle.getAttribute("aria-expanded") !== "true";
+      mobileNavToggle.setAttribute("aria-expanded", String(nextExpanded));
+      document.body.classList.toggle("nav-open", nextExpanded);
+    });
+
+    navLinks.forEach((link) => {
+      link.addEventListener("click", (event) => {
+        const targetId = link.getAttribute("href");
+        if (!targetId || !targetId.startsWith("#")) {
+          return;
+        }
+        const target = document.querySelector(targetId);
+        if (!target) {
+          return;
+        }
+        event.preventDefault();
+        document.body.classList.remove("nav-open");
+        mobileNavToggle?.setAttribute("aria-expanded", "false");
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
   }
 
-  function getFilteredRestaurants() {
-    const query = state.query.trim().toLowerCase();
+  async function loadRestaurants() {
+    try {
+      const response = await fetch(`${API_BASE}/restaurants`);
+      const payload = await response.json();
 
-    return restaurants.filter((restaurant) => {
+      if (!response.ok) {
+        throw new Error(payload.error || "Unable to load restaurants.");
+      }
+
+      state.restaurants = payload.restaurants || [];
+      state.filters = ["All", ...new Set(state.restaurants.map((item) => item.cuisine))];
+    } catch (error) {
+      state.restaurants = [];
+      state.filters = ["All"];
+      setCartMessage(error.message || "Unable to connect to backend.");
+    }
+  }
+
+  async function restoreSession() {
+    if (!state.token) {
+      renderAuthState();
+      renderOrders();
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/session`, {
+        headers: { Authorization: `Bearer ${state.token}` },
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Session expired.");
+      }
+
+      state.user = payload.user || null;
+      await loadOrders();
+    } catch {
+      state.token = "";
+      state.user = null;
+      state.orders = [];
+      localStorage.removeItem(STORAGE_KEYS.token);
+    }
+
+    renderAuthState();
+    renderOrders();
+  }
+
+  async function loadOrders() {
+    if (!state.token) {
+      state.orders = [];
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/orders`, {
+        headers: { Authorization: `Bearer ${state.token}` },
+      });
+      const payload = await response.json();
+      state.orders = response.ok ? payload.orders || [] : [];
+    } catch {
+      state.orders = [];
+    }
+  }
+
+  function renderAll() {
+    renderFilters();
+    renderRestaurants();
+    renderHighlights();
+    renderCart();
+    renderAuthState();
+    renderOrders();
+  }
+
+  function renderHighlights() {
+    const totalMenus = state.restaurants.reduce((sum, item) => sum + item.menu.length, 0);
+    const times = state.restaurants.map((item) => item.deliveryMinutes);
+    const averageDelivery = times.length
+      ? `${Math.round(times.reduce((sum, item) => sum + item, 0) / times.length)} min`
+      : "0 min";
+
+    restaurantCount.textContent = String(state.restaurants.length);
+    menuCount.textContent = String(totalMenus);
+    deliveryTime.textContent = averageDelivery;
+
+    const featured = state.restaurants.slice(0, 3);
+    featuredSpotlight.innerHTML = featured
+      .map(
+        (item) => `
+          <article class="featured-tile">
+            <strong>${item.name}</strong>
+            <p>${item.tagline}</p>
+            <div class="featured-meta">
+              <span>${item.cuisine}</span>
+              <span>${item.rating} rating</span>
+              <span>${item.deliveryMinutes} min</span>
+            </div>
+          </article>
+        `
+      )
+      .join("");
+  }
+
+  function renderFilters() {
+    filterGroup.innerHTML = state.filters
+      .map(
+        (filter) => `
+          <button
+            type="button"
+            class="filter-chip ${filter === state.activeFilter ? "is-active" : ""}"
+            data-filter="${filter}"
+          >
+            ${filter}
+          </button>
+        `
+      )
+      .join("");
+  }
+
+  function getVisibleRestaurants() {
+    const query = state.query.toLowerCase();
+
+    return state.restaurants.filter((restaurant) => {
       const matchesFilter =
-        state.activeFilter === "all" || restaurant.cuisine === state.activeFilter;
+        state.activeFilter === "All" || restaurant.cuisine === state.activeFilter;
 
       if (!query) {
         return matchesFilter;
@@ -224,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const haystack = [
         restaurant.name,
         restaurant.cuisine,
-        restaurant.description,
+        restaurant.tagline,
         ...restaurant.menu.map((item) => `${item.name} ${item.description}`),
       ]
         .join(" ")
@@ -234,34 +303,84 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function getAverageDeliveryTime() {
-    const times = restaurants.flatMap((restaurant) =>
-      restaurant.deliveryTime.split("-").map((value) => Number.parseInt(value, 10))
-    );
-    const min = Math.min(...times);
-    const max = Math.max(...times);
-    return `${min}-${max} min`;
+  function renderRestaurants() {
+    const visible = getVisibleRestaurants();
+    resultsSummary.textContent = `${visible.length} restaurant${visible.length === 1 ? "" : "s"} found`;
+
+    if (!visible.length) {
+      restaurantList.innerHTML = `
+        <article class="empty-state">
+          <strong>No restaurants match this search.</strong>
+          <p>Try another cuisine or dish name.</p>
+        </article>
+      `;
+      return;
+    }
+
+    restaurantList.innerHTML = visible
+      .map(
+        (restaurant) => `
+          <article class="restaurant-card">
+            <div class="restaurant-head">
+              <div>
+                <h3>${restaurant.name}</h3>
+                <p>${restaurant.tagline}</p>
+              </div>
+              <div class="badge-row">
+                <span class="badge">${restaurant.rating} rating</span>
+                <span class="badge">${restaurant.deliveryMinutes} min</span>
+              </div>
+            </div>
+
+            <div class="menu-tags">
+              <span>${restaurant.cuisine}</span>
+              <span>${restaurant.priceRange}</span>
+              <span>${restaurant.location}</span>
+            </div>
+
+            <div class="menu-list">
+              ${restaurant.menu
+                .map(
+                  (item) => `
+                    <article class="menu-item">
+                      <div>
+                        <strong>${item.name}</strong>
+                        <small>${item.description}</small>
+                      </div>
+                      <div class="menu-action">
+                        <span class="price">Rs. ${item.price}</span>
+                        <button type="button" class="secondary-button add-to-cart" data-menu-id="${item.id}">
+                          Add
+                        </button>
+                      </div>
+                    </article>
+                  `
+                )
+                .join("")}
+            </div>
+          </article>
+        `
+      )
+      .join("");
   }
 
   function getCartEntries() {
     const entries = [];
-
     Object.entries(state.cart).forEach(([menuId, quantity]) => {
       if (!quantity) {
         return;
       }
 
-      for (const restaurant of restaurants) {
-        const item = restaurant.menu.find((menuItem) => menuItem.id === menuId);
-
-        if (item) {
+      for (const restaurant of state.restaurants) {
+        const menuItem = restaurant.menu.find((item) => item.id === menuId);
+        if (menuItem) {
           entries.push({
+            ...menuItem,
+            quantity,
             restaurantId: restaurant.id,
             restaurantName: restaurant.name,
-            ...item,
-            quantity,
           });
-          break;
+          return;
         }
       }
     });
@@ -269,391 +388,268 @@ document.addEventListener("DOMContentLoaded", () => {
     return entries;
   }
 
-  function getCartSubtotal() {
-    return getCartEntries().reduce((sum, item) => sum + item.price * item.quantity, 0);
-  }
-
-  function renderRestaurants() {
-    const filtered = getFilteredRestaurants();
-
-    restaurantList.innerHTML = "";
-
-    if (!filtered.length) {
-      restaurantList.innerHTML = `
-        <article class="empty-state">
-          <strong>No matching restaurants found.</strong>
-          <p class="muted-note">Try a different dish name or switch the cuisine filter.</p>
-        </article>
-      `;
-    } else {
-      const fragment = document.createDocumentFragment();
-
-      filtered.forEach((restaurant) => {
-        const card = document.createElement("article");
-        card.className = "restaurant-card";
-        card.innerHTML = `
-          <div class="restaurant-top">
-            <div>
-              <h3>${restaurant.name}</h3>
-              <p class="restaurant-copy">${restaurant.description}</p>
-            </div>
-            <div class="restaurant-meta">
-              <span>${restaurant.rating} rating</span>
-              <span>${restaurant.deliveryTime}</span>
-            </div>
-          </div>
-          <div class="restaurant-footer">
-            <div class="menu-tags">
-              <span>${restaurant.cuisine}</span>
-              <span>${restaurant.offer}</span>
-              <span>Cost for two ${formatCurrency(restaurant.costForTwo)}</span>
-            </div>
-          </div>
-          <div class="menu-items">
-            ${restaurant.menu
-              .map(
-                (item) => `
-                  <article class="menu-item">
-                    <div>
-                      <strong>${item.name}</strong>
-                      <p>${item.description}</p>
-                    </div>
-                    <div class="menu-item-action">
-                      <span class="price">${formatCurrency(item.price)}</span>
-                      <button
-                        type="button"
-                        class="secondary-button add-to-cart"
-                        data-menu-id="${item.id}"
-                      >
-                        Add to cart
-                      </button>
-                    </div>
-                  </article>
-                `
-              )
-              .join("")}
-          </div>
-        `;
-        fragment.appendChild(card);
-      });
-
-      restaurantList.appendChild(fragment);
-    }
-
-    resultsSummary.textContent = `${filtered.length} restaurant${filtered.length === 1 ? "" : "s"} available`;
-
-    if (state.query.trim()) {
-      if (heroBadge) {
-        heroBadge.textContent = "Search applied";
-      }
-      if (heroDescription) {
-        heroDescription.textContent = `${filtered.length} restaurant${filtered.length === 1 ? "" : "s"} match "${state.query.trim()}". Add items to your cart below.`;
-      }
-      searchStatus.textContent = `Showing results for "${state.query.trim()}".`;
-    } else {
-      if (heroBadge) {
-        heroBadge.textContent = heroDefault.badge;
-      }
-      if (heroDescription) {
-        heroDescription.textContent = heroDefault.description;
-      }
-      searchStatus.textContent = auth ? "Search by restaurant, cuisine, or dish." : "Search works now. Add Firebase keys to enable shared login across devices.";
-    }
-  }
-
   function renderCart() {
     const entries = getCartEntries();
-    const subtotal = getCartSubtotal();
+    const subtotal = entries.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const total = entries.length ? subtotal + DELIVERY_FEE : 0;
 
-    cartItemsContainer.innerHTML = "";
-
     if (!entries.length) {
-      cartItemsContainer.innerHTML = `
+      cartItems.innerHTML = `
         <article class="empty-state">
           <strong>Your cart is empty.</strong>
-          <p class="muted-note">Pick dishes from the restaurant list to build your order.</p>
+          <p>Add dishes from the catalog to start an order.</p>
         </article>
       `;
     } else {
-      const fragment = document.createDocumentFragment();
+      cartItems.innerHTML = entries
+        .map(
+          (item) => `
+            <article class="cart-item">
+              <div class="cart-item-head">
+                <div>
+                  <strong>${item.name}</strong>
+                  <p class="muted-note">${item.restaurantName}</p>
+                </div>
+                <strong>Rs. ${item.price * item.quantity}</strong>
+              </div>
 
-      entries.forEach((item) => {
-        const cartItem = document.createElement("article");
-        cartItem.className = "cart-item";
-        cartItem.innerHTML = `
-          <div class="cart-item-head">
-            <div>
-              <strong>${item.name}</strong>
-              <p class="muted-note">${item.restaurantName}</p>
-            </div>
-            <strong>${formatCurrency(item.price * item.quantity)}</strong>
-          </div>
-          <div class="cart-item-controls">
-            <div class="quantity-controls">
-              <button type="button" class="quantity-button" data-action="decrease" data-menu-id="${item.id}">-</button>
-              <span>${item.quantity}</span>
-              <button type="button" class="quantity-button" data-action="increase" data-menu-id="${item.id}">+</button>
-            </div>
-            <button type="button" class="ghost-button" data-action="remove" data-menu-id="${item.id}">Remove</button>
-          </div>
-        `;
-        fragment.appendChild(cartItem);
-      });
-
-      cartItemsContainer.appendChild(fragment);
+              <div class="cart-row">
+                <div class="quantity-controls">
+                  <button type="button" class="quantity-button" data-cart-action="decrease" data-menu-id="${item.id}">-</button>
+                  <span>${item.quantity}</span>
+                  <button type="button" class="quantity-button" data-cart-action="increase" data-menu-id="${item.id}">+</button>
+                </div>
+                <button type="button" class="ghost-button" data-cart-action="remove" data-menu-id="${item.id}">
+                  Remove
+                </button>
+              </div>
+            </article>
+          `
+        )
+        .join("");
     }
 
-    subtotalAmount.textContent = formatCurrency(subtotal);
-    deliveryFee.textContent = formatCurrency(entries.length ? DELIVERY_FEE : 0);
-    grandTotal.textContent = formatCurrency(total);
-    cartTotal.textContent = formatCurrency(total);
+    subtotalAmount.textContent = `Rs. ${subtotal}`;
+    deliveryFee.textContent = `Rs. ${entries.length ? DELIVERY_FEE : 0}`;
+    grandTotal.textContent = `Rs. ${total}`;
     checkoutButton.disabled = !entries.length;
-    checkoutButton.textContent = entries.length ? "Place Order" : "Add items to order";
   }
 
-  function updateHeroStats() {
-    restaurantCount.textContent = String(restaurants.length);
-    deliveryTime.textContent = getAverageDeliveryTime();
-  }
-
-  function updateAuthUI() {
-    if (!authUserStatus) {
-      return;
-    }
-
-    if (!auth) {
-      authUserStatus.textContent = "Firebase auth not configured. Paste your Firebase keys first.";
-      if (logoutButton) {
-        logoutButton.hidden = true;
-      }
-      return;
-    }
-
-    if (!state.authReady) {
-      authUserStatus.textContent = "Checking sign-in state...";
-      if (logoutButton) {
-        logoutButton.hidden = true;
-      }
-      return;
-    }
-
+  function renderAuthState() {
     if (state.user) {
-      authUserStatus.textContent = `Signed in as ${state.user.name} (${state.user.email}).`;
-      if (logoutButton) {
-        logoutButton.hidden = false;
-      }
-      setFormStatus(loginForm, `Logged in as ${state.user.name}.`);
-      setFormStatus(signupForm, `Account ready for ${state.user.email}.`);
+      authUserStatus.textContent = `Signed in as ${state.user.name} (${state.user.email})`;
+      logoutButton.hidden = false;
     } else {
       authUserStatus.textContent = "Not signed in.";
-      if (logoutButton) {
-        logoutButton.hidden = true;
-      }
+      logoutButton.hidden = true;
     }
   }
 
-  function addToCart(menuId) {
-    state.cart[menuId] = (state.cart[menuId] || 0) + 1;
-    saveState(STORAGE_KEYS.cart, state.cart);
-    renderCart();
-    searchStatus.textContent = "Item added to cart.";
-  }
-
-  function changeCartQuantity(menuId, action) {
-    const currentQty = state.cart[menuId] || 0;
-
-    if (action === "increase") {
-      state.cart[menuId] = currentQty + 1;
-    } else if (action === "decrease") {
-      const nextQty = currentQty - 1;
-      if (nextQty > 0) {
-        state.cart[menuId] = nextQty;
-      } else {
-        delete state.cart[menuId];
-      }
-    } else if (action === "remove") {
-      delete state.cart[menuId];
-    }
-
-    saveState(STORAGE_KEYS.cart, state.cart);
-    renderCart();
-  }
-
-  function attachFormStatus(form) {
-    if (!form) {
+  function renderOrders() {
+    if (!state.user) {
+      orderHistory.innerHTML = `
+        <article class="empty-state">
+          <strong>Login to view order history.</strong>
+          <p>Your previous orders will appear here once you sign in.</p>
+        </article>
+      `;
       return;
     }
 
-    const status = document.createElement("p");
-    status.className = "status-message";
-    status.setAttribute("role", "status");
-    status.setAttribute("aria-live", "polite");
-    form.insertAdjacentElement("afterend", status);
-  }
-
-  function setFormStatus(form, message) {
-    const status = form?.nextElementSibling;
-    if (status) {
-      status.textContent = message;
+    if (!state.orders.length) {
+      orderHistory.innerHTML = `
+        <article class="empty-state">
+          <strong>No orders yet.</strong>
+          <p>Your completed checkout records will appear here.</p>
+        </article>
+      `;
+      return;
     }
+
+    orderHistory.innerHTML = state.orders
+      .map(
+        (order) => `
+          <article class="order-card">
+            <div class="order-head">
+              <div>
+                <strong>Order #${order.id}</strong>
+                <p>${new Date(order.createdAt).toLocaleString()}</p>
+              </div>
+              <strong>Rs. ${order.total}</strong>
+            </div>
+
+            <div class="order-meta">
+              <span>${order.items.length} item${order.items.length === 1 ? "" : "s"}</span>
+              <span>${order.status}</span>
+            </div>
+
+            <div class="order-items">
+              ${order.items.map((item) => `${item.name} x${item.quantity}`).join(", ")}
+            </div>
+          </article>
+        `
+      )
+      .join("");
   }
 
   async function handleSignup(event) {
     event.preventDefault();
-
-    if (!auth || !signupForm) {
-      setFormStatus(signupForm, "Firebase auth is not configured yet.");
-      return;
-    }
-
-    const formData = new FormData(signupForm);
-    const name = String(formData.get("name") || "").trim();
-    const email = String(formData.get("email") || "").trim();
-    const password = String(formData.get("password") || "");
+    const form = event.currentTarget;
+    const formData = new FormData(form);
 
     try {
-      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      const response = await fetch(`${API_BASE}/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: String(formData.get("name") || "").trim(),
+          email: String(formData.get("email") || "").trim(),
+          password: String(formData.get("password") || ""),
+        }),
+      });
 
-      if (userCredential.user && name) {
-        await userCredential.user.updateProfile({ displayName: name });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "Unable to create account.");
       }
 
-      setFormStatus(signupForm, `Account created for ${email}. You can now log in on any device.`);
-      signupForm.reset();
+      setToken(payload.token);
+      state.user = payload.user;
+      form.reset();
+      setFormStatus(form, "Account created successfully.");
+      await loadOrders();
+      renderAuthState();
+      renderOrders();
     } catch (error) {
-      setFormStatus(signupForm, error.message || "Unable to create account.");
+      setFormStatus(form, error.message || "Unable to create account.");
     }
   }
 
   async function handleLogin(event) {
     event.preventDefault();
-
-    if (!auth || !loginForm) {
-      setFormStatus(loginForm, "Firebase auth is not configured yet.");
-      return;
-    }
-
-    const formData = new FormData(loginForm);
-    const email = String(formData.get("email") || "").trim();
-    const password = String(formData.get("password") || "");
+    const form = event.currentTarget;
+    const formData = new FormData(form);
 
     try {
-      await auth.signInWithEmailAndPassword(email, password);
-      setFormStatus(loginForm, `Logged in as ${email}.`);
-      loginForm.reset();
+      const response = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: String(formData.get("email") || "").trim(),
+          password: String(formData.get("password") || ""),
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "Unable to login.");
+      }
+
+      setToken(payload.token);
+      state.user = payload.user;
+      form.reset();
+      setFormStatus(form, "Login successful.");
+      await loadOrders();
+      renderAuthState();
+      renderOrders();
     } catch (error) {
-      setFormStatus(loginForm, error.message || "Unable to log in.");
+      setFormStatus(form, error.message || "Unable to login.");
     }
   }
 
   async function handleLogout() {
-    if (!auth) {
-      return;
-    }
-
-    await auth.signOut();
-    setFormStatus(loginForm, "Logged out successfully.");
+    state.token = "";
+    state.user = null;
+    state.orders = [];
+    localStorage.removeItem(STORAGE_KEYS.token);
+    renderAuthState();
+    renderOrders();
+    setCartMessage("Logged out.");
   }
 
-  function handleCheckout() {
-    const entries = getCartEntries();
+  async function handleCheckout() {
+    const items = getCartEntries();
 
-    if (!entries.length) {
-      searchStatus.textContent = "Your cart is empty.";
+    if (!state.user || !state.token) {
+      setCartMessage("Login before placing an order.");
+      document.querySelector("#account")?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
 
-    if (!state.user) {
-      searchStatus.textContent = "Sign in before placing an order.";
-      document.querySelector("#login")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!items.length) {
+      setCartMessage("Add items to your cart first.");
       return;
     }
 
-    const itemCount = entries.reduce((sum, item) => sum + item.quantity, 0);
-    const total = getCartSubtotal() + DELIVERY_FEE;
-
-    searchStatus.textContent = `Order placed for ${itemCount} item${itemCount === 1 ? "" : "s"} totaling ${formatCurrency(total)}.`;
-    state.cart = {};
-    saveState(STORAGE_KEYS.cart, state.cart);
-    renderCart();
-  }
-
-  searchForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    state.query = searchInput.value.trim();
-    renderRestaurants();
-    document.querySelector("#restaurants")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-
-  searchInput.addEventListener("input", () => {
-    state.query = searchInput.value.trim();
-    renderRestaurants();
-  });
-
-  filterChips.forEach((chip) => {
-    chip.addEventListener("click", () => {
-      state.activeFilter = chip.dataset.filter || "all";
-
-      filterChips.forEach((button) => {
-        button.classList.toggle("is-active", button === chip);
+    try {
+      const response = await fetch(`${API_BASE}/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${state.token}`,
+        },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            menuId: item.id,
+            quantity: item.quantity,
+          })),
+        }),
       });
 
-      renderRestaurants();
-    });
-  });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "Unable to place order.");
+      }
 
-  restaurantList.addEventListener("click", (event) => {
-    const button = event.target.closest(".add-to-cart");
+      state.cart = {};
+      persistCart();
+      setCartMessage(`Order placed successfully. Total Rs. ${payload.order.total}.`);
+      await loadOrders();
+      renderCart();
+      renderOrders();
+    } catch (error) {
+      setCartMessage(error.message || "Unable to place order.");
+    }
+  }
 
-    if (!button) {
+  function persistCart() {
+    localStorage.setItem(STORAGE_KEYS.cart, JSON.stringify(state.cart));
+  }
+
+  function setToken(token) {
+    state.token = token;
+    localStorage.setItem(STORAGE_KEYS.token, token);
+  }
+
+  function loadJSON(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function attachStatus(form) {
+    if (!form) {
       return;
     }
 
-    addToCart(button.dataset.menuId);
-  });
+    const node = document.createElement("p");
+    node.className = "status-message";
+    node.setAttribute("role", "status");
+    node.setAttribute("aria-live", "polite");
+    form.appendChild(node);
+  }
 
-  cartItemsContainer.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-action]");
-
-    if (!button) {
-      return;
+  function setFormStatus(form, message) {
+    const target = form.querySelector(".status-message");
+    if (target) {
+      target.textContent = message;
     }
+  }
 
-    const menuId = button.dataset.menuId;
-    const action = button.dataset.action;
-
-    if (menuId && action) {
-      changeCartQuantity(menuId, action);
-    }
-  });
-
-  checkoutButton.addEventListener("click", handleCheckout);
-  signupForm?.addEventListener("submit", handleSignup);
-  loginForm?.addEventListener("submit", handleLogin);
-  logoutButton?.addEventListener("click", handleLogout);
-
-  navAnchors.forEach((anchor) => {
-    anchor.addEventListener("click", (event) => {
-      const targetSelector = anchor.getAttribute("href");
-
-      if (!targetSelector || !targetSelector.startsWith("#")) {
-        return;
-      }
-
-      const target = document.querySelector(targetSelector);
-
-      if (!target) {
-        return;
-      }
-
-      event.preventDefault();
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  });
-
-  updateHeroStats();
-  updateAuthUI();
-  renderRestaurants();
-  renderCart();
+  function setCartMessage(message) {
+    cartMessage.textContent = message;
+  }
 });

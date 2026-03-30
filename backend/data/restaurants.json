@@ -1,0 +1,146 @@
+[
+  {
+    "id": "r1",
+    "name": "Spice Dock",
+    "cuisine": "Indian",
+    "rating": 4.8,
+    "deliveryMinutes": 24,
+    "priceRange": "Rs. 450 for two",
+    "location": "MG Road",
+    "tagline": "North Indian comfort dishes with rich gravies and sharp spice balance.",
+    "menu": [
+      {
+        "id": "m1",
+        "name": "Lucknowi Chicken Biryani",
+        "description": "Slow-cooked rice, saffron, and tender chicken pieces.",
+        "price": 289
+      },
+      {
+        "id": "m2",
+        "name": "Paneer Lababdar",
+        "description": "Silky tomato gravy with paneer and butter finish.",
+        "price": 249
+      }
+    ]
+  },
+  {
+    "id": "r2",
+    "name": "Coal Oven Social",
+    "cuisine": "Italian",
+    "rating": 4.6,
+    "deliveryMinutes": 31,
+    "priceRange": "Rs. 620 for two",
+    "location": "Indiranagar",
+    "tagline": "Stone-baked pizza, hand-cut pasta, and sharp house sauces.",
+    "menu": [
+      {
+        "id": "m3",
+        "name": "Truffle Mushroom Pizza",
+        "description": "Mozzarella, mushrooms, garlic cream, and truffle oil.",
+        "price": 359
+      },
+      {
+        "id": "m4",
+        "name": "Spicy Arrabbiata Pasta",
+        "description": "Tomato chili sauce with basil and parmesan.",
+        "price": 309
+      }
+    ]
+  },
+  {
+    "id": "r3",
+    "name": "Crave Theory",
+    "cuisine": "Fast Food",
+    "rating": 4.5,
+    "deliveryMinutes": 19,
+    "priceRange": "Rs. 390 for two",
+    "location": "Koramangala",
+    "tagline": "Smash burgers, loaded fries, and high-speed late-night orders.",
+    "menu": [
+      {
+        "id": "m5",
+        "name": "Double Smash Burger",
+        "description": "Two patties, cheddar, onions, and burger sauce.",
+        "price": 269
+      },
+      {
+        "id": "m6",
+        "name": "Peri Peri Fries",
+        "description": "Crisp fries tossed with peri peri seasoning.",
+        "price": 149
+      }
+    ]
+  },
+  {
+    "id": "r4",
+    "name": "Sweet Circuit",
+    "cuisine": "Dessert",
+    "rating": 4.9,
+    "deliveryMinutes": 18,
+    "priceRange": "Rs. 320 for two",
+    "location": "HSR Layout",
+    "tagline": "Dessert boxes, chilled cheesecakes, and premium brownies.",
+    "menu": [
+      {
+        "id": "m7",
+        "name": "Blueberry Cheesecake Jar",
+        "description": "Creamy cheesecake layered with blueberry compote.",
+        "price": 189
+      },
+      {
+        "id": "m8",
+        "name": "Dark Chocolate Brownie",
+        "description": "Dense chocolate brownie with fudge drizzle.",
+        "price": 169
+      }
+    ]
+  },
+  {
+    "id": "r5",
+    "name": "Green Ritual",
+    "cuisine": "Healthy",
+    "rating": 4.7,
+    "deliveryMinutes": 22,
+    "priceRange": "Rs. 430 for two",
+    "location": "Bellandur",
+    "tagline": "Balanced bowls, lean proteins, and clean meals that still taste finished.",
+    "menu": [
+      {
+        "id": "m9",
+        "name": "Mediterranean Power Bowl",
+        "description": "Couscous, grilled vegetables, hummus, and feta.",
+        "price": 259
+      },
+      {
+        "id": "m10",
+        "name": "Smoked Chicken Wrap",
+        "description": "High-protein wrap with yogurt herb dressing.",
+        "price": 229
+      }
+    ]
+  },
+  {
+    "id": "r6",
+    "name": "Tandoor Transit",
+    "cuisine": "Indian",
+    "rating": 4.4,
+    "deliveryMinutes": 27,
+    "priceRange": "Rs. 500 for two",
+    "location": "Whitefield",
+    "tagline": "Tandoori plates, kebab rolls, and strong lunch combos.",
+    "menu": [
+      {
+        "id": "m11",
+        "name": "Achari Paneer Tikka",
+        "description": "Pickled spice marinade with charred paneer cubes.",
+        "price": 239
+      },
+      {
+        "id": "m12",
+        "name": "Chicken Seekh Roll",
+        "description": "Soft roomali wrap stuffed with juicy seekh kebab.",
+        "price": 199
+      }
+    ]
+  }
+]
