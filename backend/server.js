@@ -330,7 +330,7 @@ const server = http.createServer(async (req, res) => {
       const order = {
         id: `QB${Date.now()}`,
         userId: session.user.id,
-        status: "confirmed",
+        status: "awaiting_payment",
         items: builtItems,
         subtotal,
         deliveryFee: DELIVERY_FEE,
@@ -345,6 +345,43 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 201, { order });
     } catch (error) {
       sendJson(res, 400, { error: error.message || "Unable to place order." });
+    }
+    return;
+  }
+
+  const paymentMatch = pathname.match(/^\/api\/orders\/([^/]+)\/payment$/);
+  if (paymentMatch && req.method === "POST") {
+    try {
+      const session = getSessionUser(req);
+      if (!session) {
+        sendJson(res, 401, { error: "Unauthorized." });
+        return;
+      }
+
+      const body = await parseBody(req);
+      const paymentReference = String(body.paymentReference || "").trim();
+      if (!paymentReference) {
+        sendJson(res, 400, { error: "Payment reference is required." });
+        return;
+      }
+
+      const orderId = paymentMatch[1];
+      const orders = readJson(ordersPath, []);
+      const order = orders.find((entry) => entry.id === orderId && entry.userId === session.user.id);
+
+      if (!order) {
+        sendJson(res, 404, { error: "Order not found." });
+        return;
+      }
+
+      order.status = "payment_submitted";
+      order.paymentReference = paymentReference;
+      order.paymentSubmittedAt = new Date().toISOString();
+      writeJson(ordersPath, orders);
+
+      sendJson(res, 200, { order });
+    } catch (error) {
+      sendJson(res, 400, { error: error.message || "Unable to submit payment." });
     }
     return;
   }

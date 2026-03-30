@@ -27,6 +27,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const logoutButton = document.querySelector("#logout-button");
   const orderHistory = document.querySelector("#order-history");
   const mobileNavToggle = document.querySelector("#mobile-nav-toggle");
+  const paymentModal = document.querySelector("#payment-modal");
+  const paymentAmount = document.querySelector("#payment-amount");
+  const paymentForm = document.querySelector("#payment-form");
+  const paymentReference = document.querySelector("#payment-reference");
+  const paymentMessage = document.querySelector("#payment-message");
+  const paymentClose = document.querySelector("#payment-close");
   const navLinks = Array.from(document.querySelectorAll('.nav-list a[href^="#"]'));
 
   if (
@@ -49,6 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
     token: localStorage.getItem(STORAGE_KEYS.token) || "",
     user: null,
     orders: [],
+    pendingOrder: null,
   };
 
   attachStatus(signupForm);
@@ -135,6 +142,13 @@ document.addEventListener("DOMContentLoaded", () => {
     loginForm?.addEventListener("submit", handleLogin);
     logoutButton?.addEventListener("click", handleLogout);
     checkoutButton.addEventListener("click", handleCheckout);
+    paymentForm?.addEventListener("submit", handlePaymentSubmit);
+    paymentClose?.addEventListener("click", closePaymentModal);
+    paymentModal?.addEventListener("click", (event) => {
+      if (event.target === paymentModal) {
+        closePaymentModal();
+      }
+    });
 
     mobileNavToggle?.addEventListener("click", () => {
       const nextExpanded = mobileNavToggle.getAttribute("aria-expanded") !== "true";
@@ -481,6 +495,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="order-meta">
               <span>${order.items.length} item${order.items.length === 1 ? "" : "s"}</span>
               <span>${order.status}</span>
+              ${order.paymentReference ? `<span>UTR ${order.paymentReference}</span>` : ""}
             </div>
 
             <div class="order-items">
@@ -601,15 +616,70 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(payload.error || "Unable to place order.");
       }
 
-      state.cart = {};
-      persistCart();
-      setCartMessage(`Order placed successfully. Total Rs. ${payload.order.total}.`);
-      await loadOrders();
-      renderCart();
-      renderOrders();
+      state.pendingOrder = payload.order;
+      paymentAmount.textContent = `Rs. ${payload.order.total}`;
+      paymentMessage.textContent = "";
+      paymentReference.value = "";
+      openPaymentModal();
+      setCartMessage("Order created. Complete payment by scanning the QR.");
     } catch (error) {
       setCartMessage(error.message || "Unable to place order.");
     }
+  }
+
+  async function handlePaymentSubmit(event) {
+    event.preventDefault();
+
+    if (!state.pendingOrder || !state.token) {
+      paymentMessage.textContent = "No pending order found.";
+      return;
+    }
+
+    const reference = paymentReference.value.trim();
+    if (!reference) {
+      paymentMessage.textContent = "Enter the payment reference or UTR number.";
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/orders/${state.pendingOrder.id}/payment`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${state.token}`,
+        },
+        body: JSON.stringify({
+          paymentReference: reference,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "Unable to submit payment.");
+      }
+
+      paymentMessage.textContent = "Payment submitted successfully.";
+      state.pendingOrder = null;
+      state.cart = {};
+      persistCart();
+      await loadOrders();
+      renderCart();
+      renderOrders();
+      setCartMessage("Payment submitted. Your order is now marked as paid.");
+      setTimeout(closePaymentModal, 800);
+    } catch (error) {
+      paymentMessage.textContent = error.message || "Unable to submit payment.";
+    }
+  }
+
+  function openPaymentModal() {
+    paymentModal.hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+
+  function closePaymentModal() {
+    paymentModal.hidden = true;
+    document.body.style.overflow = "";
   }
 
   function persistCart() {

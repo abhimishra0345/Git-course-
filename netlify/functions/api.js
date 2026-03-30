@@ -134,7 +134,7 @@ exports.handler = async function handler(event) {
       const order = {
         id: `QB${Date.now()}`,
         userId: session.user.id,
-        status: "confirmed",
+        status: "awaiting_payment",
         items: builtItems,
         subtotal,
         deliveryFee: DELIVERY_FEE,
@@ -147,6 +147,34 @@ exports.handler = async function handler(event) {
       await writeCollection("orders", orders);
 
       return json(201, { order });
+    }
+
+    const paymentMatch = path.match(/^\/api\/orders\/([^/]+)\/payment$/);
+    if (paymentMatch && event.httpMethod === "POST") {
+      const session = await getSessionUser(event.headers.authorization);
+      if (!session) {
+        return json(401, { error: "Unauthorized." });
+      }
+
+      const body = parseBody(event.body);
+      const paymentReference = String(body.paymentReference || "").trim();
+      if (!paymentReference) {
+        return json(400, { error: "Payment reference is required." });
+      }
+
+      const orders = await readCollection("orders");
+      const order = orders.find((entry) => entry.id === paymentMatch[1] && entry.userId === session.user.id);
+
+      if (!order) {
+        return json(404, { error: "Order not found." });
+      }
+
+      order.status = "payment_submitted";
+      order.paymentReference = paymentReference;
+      order.paymentSubmittedAt = new Date().toISOString();
+      await writeCollection("orders", orders);
+
+      return json(200, { order });
     }
 
     return json(404, { error: "Not found" });

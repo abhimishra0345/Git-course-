@@ -123,7 +123,7 @@
                             <div class="grand-total"><span>Total</span><strong id="grand-total">Rs. 0</strong></div>
                         </div>
 
-                        <button id="checkout-button" type="button">Place order</button>
+                        <button id="checkout-button" type="button">Proceed to payment</button>
                         <p id="cart-message" class="status-message" aria-live="polite"></p>
                     </section>
 
@@ -186,6 +186,44 @@
             <p>QuickBite demo platform with local API backend.</p>
         </footer>
     </div>
+
+    <section id="payment-modal" class="payment-modal" hidden aria-labelledby="payment-title">
+        <div class="payment-dialog">
+            <button id="payment-close" class="payment-close" type="button" aria-label="Close payment dialog">Close</button>
+            <div class="section-heading">
+                <span>UPI payment</span>
+                <h2 id="payment-title">Scan and pay</h2>
+            </div>
+            <p class="payment-copy">
+                Scan the QR below using any UPI app, pay the exact amount, then submit the payment reference or UTR number.
+            </p>
+
+            <div class="payment-grid">
+                <div class="payment-qr-card">
+                    <img src="./assets/images/qr.jpg" alt="UPI payment QR code" class="payment-qr">
+                    <div class="payment-amount-block">
+                        <span>Total payable</span>
+                        <strong id="payment-amount">Rs. 0</strong>
+                    </div>
+                </div>
+
+                <form id="payment-form" class="payment-form">
+                    <div class="payment-note">
+                        <strong>Instructions</strong>
+                        <p>Use PhonePe, Google Pay, Paytm, or any UPI app. After payment, enter the UTR/reference ID below.</p>
+                    </div>
+
+                    <label>
+                        <span>Payment reference / UTR</span>
+                        <input id="payment-reference" name="paymentReference" type="text" placeholder="Enter UTR or reference number" required>
+                    </label>
+
+                    <button type="submit">Submit payment</button>
+                    <p id="payment-message" class="status-message" aria-live="polite"></p>
+                </form>
+            </div>
+        </div>
+    </section>
 
     <script src="./assets/js/script.js"></script>
 </body>
