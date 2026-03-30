@@ -10,11 +10,12 @@
     <header class="site-header">
         <a class="brand" href="./index.html" aria-label="Zomato home">Zomato</a>
         <nav aria-label="Primary navigation">
+        
             <ul class="nav-list">
                 <li><a href="./index.html">Home</a></li>
-                <li><a href="./pages/portfolio.html">Add Restaurant</a></li>
+                <li><a href="#restaurants">Restaurants</a></li>
                 <li><a href="#login">Login</a></li>
-                <li><a href="#signup">Sign Up</a></li>
+                <li><a href="#signup">Sign Up</a></li> 
             </ul>
         </nav>
     </header>
@@ -35,6 +36,21 @@
                 >
                 <button type="submit">Search</button>
             </form>
+
+            <div class="hero-stats" aria-label="Platform highlights">
+                <article class="stat-pill">
+                    <strong id="restaurant-count">0</strong>
+                    <span>Restaurants</span>
+                </article>
+                <article class="stat-pill">
+                    <strong id="delivery-time">0-0 min</strong>
+                    <span>Delivery</span>
+                </article>
+                <article class="stat-pill">
+                    <strong id="cart-total">Rs. 0</strong>
+                    <span>Cart total</span>
+                </article>
+            </div>
         </section>
 
         <section class="features">
@@ -64,14 +80,95 @@
             </div>
         </section>
 
-        <section id="login" class="sr-only" aria-label="Login placeholder">
-            <h2>Login</h2>
-            <p>Login section placeholder.</p>
+        <section id="restaurants" class="catalog" aria-label="Restaurant catalog">
+            <div class="section-heading">
+                <span>Order now</span>
+                <h2>Popular restaurants near you</h2>
+            </div>
+
+            <div class="catalog-toolbar">
+                <div class="filter-group" aria-label="Cuisine filters">
+                    <button type="button" class="filter-chip is-active" data-filter="all">All</button>
+                    <button type="button" class="filter-chip" data-filter="Indian">Indian</button>
+                    <button type="button" class="filter-chip" data-filter="Italian">Italian</button>
+                    <button type="button" class="filter-chip" data-filter="Fast Food">Fast Food</button>
+                    <button type="button" class="filter-chip" data-filter="Dessert">Dessert</button>
+                    <button type="button" class="filter-chip" data-filter="Healthy">Healthy</button>
+                </div>
+                <p id="results-summary" class="results-summary" aria-live="polite"></p>
+            </div>
+
+            <div id="restaurant-list" class="restaurant-grid" aria-live="polite"></div>
         </section>
 
-        <section id="signup" class="sr-only" aria-label="Sign up placeholder">
-            <h2>Sign Up</h2>
-            <p>Sign up section placeholder.</p>
+        <section class="order-shell" aria-label="Order details">
+            <section class="cart-panel">
+                <div class="section-heading">
+                    <span>Your order</span>
+                    <h2>Cart summary</h2>
+                </div>
+
+                <div id="cart-items" class="cart-items"></div>
+
+                <div class="cart-totals">
+                    <div>
+                        <span>Subtotal</span>
+                        <strong id="subtotal-amount">Rs. 0</strong>
+                    </div>
+                    <div>
+                        <span>Delivery</span>
+                        <strong id="delivery-fee">Rs. 40</strong>
+                    </div>
+                    <div class="cart-grand-total">
+                        <span>Total</span>
+                        <strong id="grand-total">Rs. 0</strong>
+                    </div>
+                </div>
+
+                <button id="checkout-button" type="button">Place Order</button>
+            </section>
+
+            <section class="auth-grid" aria-label="Account actions">
+                <section id="login" class="auth-card">
+                    <div class="section-heading">
+                        <span>Welcome back</span>
+                        <h2>Login</h2>
+                    </div>
+                    <form id="login-form" class="auth-form">
+                        <label>
+                            <span>Email</span>
+                            <input type="email" name="email" placeholder="you@example.com" required>
+                        </label>
+                        <label>
+                            <span>Password</span>
+                            <input type="password" name="password" placeholder="Enter password" minlength="6" required>
+                        </label>
+                        <button type="submit">Login</button>
+                    </form>
+                </section>
+
+                <section id="signup" class="auth-card">
+                    <div class="section-heading">
+                        <span>New here</span>
+                        <h2>Create account</h2>
+                    </div>
+                    <form id="signup-form" class="auth-form">
+                        <label>
+                            <span>Full name</span>
+                            <input type="text" name="name" placeholder="Your full name" required>
+                        </label>
+                        <label>
+                            <span>Email</span>
+                            <input type="email" name="email" placeholder="you@example.com" required>
+                        </label>
+                        <label>
+                            <span>Password</span>
+                            <input type="password" name="password" placeholder="Create password" minlength="6" required>
+                        </label>
+                        <button type="submit">Sign Up</button>
+                    </form>
+                </section>
+            </section>
         </section>
     </main>
 
