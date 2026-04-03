@@ -142,5 +142,101 @@
         "price": 199
       }
     ]
+  },
+  {
+    "id": "r7",
+    "name": "Bao Boulevard",
+    "cuisine": "Asian",
+    "rating": 4.7,
+    "deliveryMinutes": 26,
+    "priceRange": "Rs. 540 for two",
+    "location": "Jayanagar",
+    "tagline": "Steamed baos, ramen bowls, and bold street-style Asian comfort food.",
+    "menu": [
+      {
+        "id": "m13",
+        "name": "Crispy Chicken Bao",
+        "description": "Soft steamed bao with crunchy chicken, pickles, and chili mayo.",
+        "price": 219
+      },
+      {
+        "id": "m14",
+        "name": "Miso Veg Ramen",
+        "description": "Rich broth, noodles, mushrooms, corn, and sesame greens.",
+        "price": 289
+      }
+    ]
+  },
+  {
+    "id": "r8",
+    "name": "Sunrise Tiffin Co.",
+    "cuisine": "South Indian",
+    "rating": 4.8,
+    "deliveryMinutes": 20,
+    "priceRange": "Rs. 260 for two",
+    "location": "Basavanagudi",
+    "tagline": "Crisp dosas, fluffy idlis, and breakfast plates that work all day.",
+    "menu": [
+      {
+        "id": "m15",
+        "name": "Ghee Podi Masala Dosa",
+        "description": "Golden dosa with podi spice, potato masala, and ghee finish.",
+        "price": 179
+      },
+      {
+        "id": "m16",
+        "name": "Idli Vada Combo",
+        "description": "Two idlis, medu vada, sambar, and fresh coconut chutney.",
+        "price": 149
+      }
+    ]
+  },
+  {
+    "id": "r9",
+    "name": "Firefly Grill",
+    "cuisine": "BBQ",
+    "rating": 4.6,
+    "deliveryMinutes": 29,
+    "priceRange": "Rs. 690 for two",
+    "location": "Electronic City",
+    "tagline": "Grilled platters, smoky wraps, and char-heavy comfort food.",
+    "menu": [
+      {
+        "id": "m17",
+        "name": "Smoky Chicken Platter",
+        "description": "Grilled chicken, herbed rice, sauteed vegetables, and dip.",
+        "price": 349
+      },
+      {
+        "id": "m18",
+        "name": "BBQ Paneer Wrap",
+        "description": "Paneer tossed in barbecue glaze with crunchy slaw.",
+        "price": 229
+      }
+    ]
+  },
+  {
+    "id": "r10",
+    "name": "Velvet Bean Cafe",
+    "cuisine": "Cafe",
+    "rating": 4.5,
+    "deliveryMinutes": 23,
+    "priceRange": "Rs. 480 for two",
+    "location": "Church Street",
+    "tagline": "Coffeehouse sandwiches, soft bakes, and relaxed all-day cafe plates.",
+    "menu": [
+      {
+        "id": "m19",
+        "name": "Pesto Grilled Sandwich",
+        "description": "Toasted sourdough with basil pesto, cheese, and roast vegetables.",
+        "price": 209
+      },
+      {
+        "id": "m20",
+        "name": "Cold Coffee Mocha",
+        "description": "Chilled mocha blend topped with cocoa and cream.",
+        "price": 159
+      }
+    ]
   }
 ]

@@ -4,8 +4,10 @@ const path = require("path");
 const crypto = require("crypto");
 
 const ROOT = path.resolve(__dirname, "..");
-const DATA_DIR = path.join(__dirname, "data");
+const SEED_DIR = path.join(__dirname, "data");
+const STORE_DIR = process.env.STORE_DIR || SEED_DIR;
 const PORT = Number.parseInt(process.env.PORT || "3000", 10);
+const HOST = process.env.HOST || "0.0.0.0";
 const DELIVERY_FEE = 40;
 
 const MIME_TYPES = {
@@ -19,13 +21,15 @@ const MIME_TYPES = {
   ".jpeg": "image/jpeg",
 };
 
-const restaurantsPath = path.join(DATA_DIR, "restaurants.json");
-const usersPath = path.join(DATA_DIR, "users.json");
-const ordersPath = path.join(DATA_DIR, "orders.json");
-const sessionsPath = path.join(DATA_DIR, "sessions.json");
-const adminSessionsPath = path.join(DATA_DIR, "admin-sessions.json");
+const restaurantsPath = path.join(SEED_DIR, "restaurants.json");
+const usersPath = path.join(STORE_DIR, "users.json");
+const ordersPath = path.join(STORE_DIR, "orders.json");
+const sessionsPath = path.join(STORE_DIR, "sessions.json");
+const adminSessionsPath = path.join(STORE_DIR, "admin-sessions.json");
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@quickbite.local";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Admin@12345";
+
+initializeStore();
 
 function readJson(filePath, fallback) {
   try {
@@ -36,7 +40,25 @@ function readJson(filePath, fallback) {
 }
 
 function writeJson(filePath, data) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+}
+
+function initializeStore() {
+  const defaults = {
+    [usersPath]: [],
+    [ordersPath]: [],
+    [sessionsPath]: [],
+    [adminSessionsPath]: [],
+  };
+
+  fs.mkdirSync(STORE_DIR, { recursive: true });
+
+  Object.entries(defaults).forEach(([filePath, fallback]) => {
+    if (!fs.existsSync(filePath)) {
+      writeJson(filePath, fallback);
+    }
+  });
 }
 
 function sendJson(res, statusCode, payload) {
@@ -127,6 +149,14 @@ function sanitizeUser(user) {
   };
 }
 
+function sanitizeCustomer(customer) {
+  return {
+    phone: String(customer?.phone || "").replace(/\D/g, "").slice(0, 10),
+    address: String(customer?.address || "").trim(),
+    note: String(customer?.note || "").trim(),
+  };
+}
+
 function getSessionUser(req) {
   const token = getBearerToken(req);
   if (!token) {
@@ -175,6 +205,40 @@ function buildOrderItems(items, restaurants) {
   });
 
   return built;
+}
+
+function resolveOrderItemRestaurant(item, restaurants) {
+  if (item?.restaurantId) {
+    const restaurant = restaurants.find((entry) => entry.id === item.restaurantId);
+    if (restaurant) {
+      return restaurant;
+    }
+  }
+
+  return restaurants.find((restaurant) =>
+    Array.isArray(restaurant.menu) &&
+    restaurant.menu.some((menuItem) => menuItem.id === item?.menuId)
+  );
+}
+
+function hydrateOrder(order, restaurants) {
+  return {
+    ...order,
+    items: Array.isArray(order?.items)
+      ? order.items.map((item) => {
+          const restaurant = resolveOrderItemRestaurant(item, restaurants);
+          const menuItem = restaurant?.menu?.find((entry) => entry.id === item?.menuId);
+
+          return {
+            ...item,
+            restaurantId: item?.restaurantId || restaurant?.id || "",
+            restaurantName: item?.restaurantName || restaurant?.name || "Restaurant unavailable",
+            name: item?.name || menuItem?.name || "Item unavailable",
+            price: Number(item?.price ?? menuItem?.price ?? 0),
+          };
+        })
+      : [],
+  };
 }
 
 function serveStatic(req, res, pathname) {
@@ -236,6 +300,7 @@ const server = http.createServer(async (req, res) => {
         passwordHash: passwordMeta.hash,
         passwordSalt: passwordMeta.salt,
         createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
       };
 
       users.push(user);
@@ -270,6 +335,9 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 401, { error: "Invalid email or password." });
         return;
       }
+
+      user.lastLoginAt = new Date().toISOString();
+      writeJson(usersPath, users);
 
       const sessions = readJson(sessionsPath, []);
       const token = createToken();
@@ -319,9 +387,10 @@ const server = http.createServer(async (req, res) => {
 
       const users = readJson(usersPath, []);
       const orders = readJson(ordersPath, []);
+      const restaurants = readJson(restaurantsPath, []);
       sendJson(res, 200, {
         token,
-        orders: buildAdminOrders(orders, users),
+        orders: buildAdminOrders(orders, users, restaurants),
       });
     } catch (error) {
       sendJson(res, 400, { error: error.message || "Unable to login as admin." });
@@ -337,8 +406,9 @@ const server = http.createServer(async (req, res) => {
 
     const users = readJson(usersPath, []);
     const orders = readJson(ordersPath, []);
+    const restaurants = readJson(restaurantsPath, []);
     sendJson(res, 200, {
-      orders: buildAdminOrders(orders, users),
+      orders: buildAdminOrders(orders, users, restaurants),
     });
     return;
   }
@@ -350,7 +420,10 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    const orders = readJson(ordersPath, []).filter((order) => order.userId === session.user.id);
+    const restaurants = readJson(restaurantsPath, []);
+    const orders = readJson(ordersPath, [])
+      .filter((order) => order.userId === session.user.id)
+      .map((order) => hydrateOrder(order, restaurants));
     sendJson(res, 200, { orders: orders.reverse() });
     return;
   }
@@ -365,8 +438,14 @@ const server = http.createServer(async (req, res) => {
 
       const body = await parseBody(req);
       const items = Array.isArray(body.items) ? body.items : [];
+      const customer = sanitizeCustomer(body.customer || {});
       if (!items.length) {
         sendJson(res, 400, { error: "At least one item is required." });
+        return;
+      }
+
+      if (customer.phone.length !== 10 || customer.address.length < 10) {
+        sendJson(res, 400, { error: "Valid phone number and delivery address are required." });
         return;
       }
 
@@ -390,6 +469,7 @@ const server = http.createServer(async (req, res) => {
         userId: session.user.id,
         status: "awaiting_payment",
         items: builtItems,
+        customer,
         subtotal,
         deliveryFee: DELIVERY_FEE,
         total: subtotal + DELIVERY_FEE,
@@ -471,8 +551,9 @@ const server = http.createServer(async (req, res) => {
       writeJson(ordersPath, orders);
 
       const users = readJson(usersPath, []);
+      const restaurants = readJson(restaurantsPath, []);
       sendJson(res, 200, {
-        orders: buildAdminOrders(orders, users),
+        orders: buildAdminOrders(orders, users, restaurants),
       });
     } catch (error) {
       sendJson(res, 400, { error: error.message || "Unable to update order status." });
@@ -483,18 +564,19 @@ const server = http.createServer(async (req, res) => {
   serveStatic(req, res, pathname);
 });
 
-server.listen(PORT, () => {
-  console.log(`QuickBite server running on http://localhost:${PORT}`);
+server.listen(PORT, HOST, () => {
+  const publicHost = HOST === "0.0.0.0" ? "<your-server-ip-or-domain>" : HOST;
+  console.log(`QuickBite server running on http://${publicHost}:${PORT}`);
 });
 
-function buildAdminOrders(orders, users) {
+function buildAdminOrders(orders, users, restaurants) {
   return orders
     .slice()
     .reverse()
     .map((order) => {
       const user = users.find((entry) => entry.id === order.userId);
       return {
-        ...order,
+        ...hydrateOrder(order, restaurants),
         userName: user ? user.name : "Unknown user",
         userEmail: user ? user.email : "Unknown email",
       };

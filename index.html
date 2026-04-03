@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="QuickBite is a responsive food ordering demo with live restaurant discovery, checkout, payment tracking, and admin order review.">
+    <meta name="theme-color" content="#e34d36">
     <title>QuickBite | Food Ordering Platform</title>
     <link rel="stylesheet" href="./assets/css/style.css">
 </head>
@@ -72,6 +74,33 @@
                         <p class="preview-label">Tonight's fast picks</p>
                         <div id="featured-spotlight" class="featured-spotlight"></div>
                     </div>
+                    <div class="quickbite-motion" aria-hidden="true">
+                        <div class="motion-stage">
+                            <div class="motion-halo motion-halo-one"></div>
+                            <div class="motion-halo motion-halo-two"></div>
+                            <div class="motion-route">
+                                <span class="route-stop route-stop-start">Kitchen</span>
+                                <span class="route-line"></span>
+                                <span class="route-rider">QB</span>
+                                <span class="route-stop route-stop-end">You</span>
+                            </div>
+                            <div class="motion-cards">
+                                <article class="motion-card motion-card-primary">
+                                    <span>QuickBite live</span>
+                                    <strong>Fresh orders dispatched in minutes.</strong>
+                                </article>
+                                <article class="motion-card motion-card-secondary">
+                                    <span>Popular right now</span>
+                                    <strong>Biryani, burgers, desserts, bowls.</strong>
+                                </article>
+                            </div>
+                            <div class="motion-pills">
+                                <span>Fast delivery</span>
+                                <span>Live tracking</span>
+                                <span>Secure payment</span>
+                            </div>
+                        </div>
+                    </div>
                 </aside>
             </section>
 
@@ -123,6 +152,23 @@
                             <div class="grand-total"><span>Total</span><strong id="grand-total">Rs. 0</strong></div>
                         </div>
 
+                        <form id="checkout-details-form" class="auth-form checkout-details-form">
+                            <h3>Delivery details</h3>
+                            <label>
+                                <span>Phone number</span>
+                                <input type="tel" id="checkout-phone" name="phone" placeholder="10-digit contact number" inputmode="numeric" autocomplete="tel" pattern="[0-9]{10}" maxlength="10" required>
+                            </label>
+                            <label>
+                                <span>Delivery address</span>
+                                <small class="field-help">Add house or flat number, street, area, and a landmark if needed.</small>
+                                <textarea id="checkout-address" name="address" placeholder="House / flat, street, area, landmark" rows="3" required></textarea>
+                            </label>
+                            <label>
+                                <span>Instructions</span>
+                                <textarea id="checkout-note" name="note" placeholder="Optional delivery note, gate code, spice preference" rows="2"></textarea>
+                            </label>
+                        </form>
+
                         <button id="checkout-button" type="button">Proceed to payment</button>
                         <p id="cart-message" class="status-message" aria-live="polite"></p>
                     </section>
@@ -143,15 +189,15 @@
                                 <h3>Create account</h3>
                                 <label>
                                     <span>Full name</span>
-                                    <input type="text" name="name" placeholder="Your full name" required>
+                                    <input type="text" name="name" placeholder="Your full name" autocomplete="name" required>
                                 </label>
                                 <label>
                                     <span>Email</span>
-                                    <input type="email" name="email" placeholder="you@example.com" required>
+                                    <input type="email" name="email" placeholder="you@example.com" autocomplete="email" required>
                                 </label>
                                 <label>
                                     <span>Password</span>
-                                    <input type="password" name="password" placeholder="Minimum 6 characters" minlength="6" required>
+                                    <input type="password" name="password" placeholder="Minimum 6 characters" minlength="6" autocomplete="new-password" required>
                                 </label>
                                 <button type="submit">Create account</button>
                             </form>
@@ -160,11 +206,11 @@
                                 <h3>Login</h3>
                                 <label>
                                     <span>Email</span>
-                                    <input type="email" name="email" placeholder="you@example.com" required>
+                                    <input type="email" name="email" placeholder="you@example.com" autocomplete="email" required>
                                 </label>
                                 <label>
                                     <span>Password</span>
-                                    <input type="password" name="password" placeholder="Your password" minlength="6" required>
+                                    <input type="password" name="password" placeholder="Your password" minlength="6" autocomplete="current-password" required>
                                 </label>
                                 <button type="submit">Login</button>
                             </form>
@@ -192,11 +238,11 @@
                         <h3>Admin login</h3>
                         <label>
                             <span>Email</span>
-                            <input type="email" name="email" placeholder="admin@quickbite.local" required>
+                            <input type="email" name="email" placeholder="admin@quickbite.local" autocomplete="username" required>
                         </label>
                         <label>
                             <span>Password</span>
-                            <input type="password" name="password" placeholder="Admin password" required>
+                            <input type="password" name="password" placeholder="Admin password" autocomplete="current-password" required>
                         </label>
                         <button type="submit">Login as admin</button>
                     </form>
@@ -245,7 +291,7 @@
 
                     <label>
                         <span>Payment reference / UTR</span>
-                        <input id="payment-reference" name="paymentReference" type="text" placeholder="Enter UTR or reference number" required>
+                        <input id="payment-reference" name="paymentReference" type="text" placeholder="Enter UTR or reference number" autocomplete="off" required>
                     </label>
 
                     <button type="submit">Submit payment</button>

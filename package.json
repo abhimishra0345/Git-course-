@@ -1,8 +1,13 @@
 {
-  "name": "quickbite-platform",
+  "name": "quickbite",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "start": "node backend/server.js"
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js",
+    "check": "node --check backend/server.js && node --check netlify/functions/api.js && node --check assets/js/script.js"
   }
 }

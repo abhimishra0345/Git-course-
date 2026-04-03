@@ -1,14 +1,21 @@
 const crypto = require("crypto");
+const fs = require("fs/promises");
+const path = require("path");
 const restaurants = require("../../backend/data/restaurants.json");
+const seedUsers = require("../../backend/data/users.json");
+const seedOrders = require("../../backend/data/orders.json");
+const seedSessions = require("../../backend/data/sessions.json");
+const seedAdminSessions = require("../../backend/data/admin-sessions.json");
 
 const DELIVERY_FEE = 40;
-const GITHUB_REPO = process.env.GITHUB_REPO || "abhimishra0345/Git-course-";
+const GITHUB_REPO = process.env.GITHUB_REPO || "abhimishra0345/QuickBite";
 const DATA_BRANCH = process.env.DATA_BRANCH || "app-data";
 const DATA_PATH = process.env.DATA_PATH || ".quickbite/store.enc";
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
 const STORE_SECRET = process.env.STORE_SECRET || "";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@quickbite.local";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Admin@12345";
+const LOCAL_STORE_PATH = process.env.LOCAL_STORE_PATH || path.join("/tmp", "quickbite-store.json");
 
 exports.handler = async function handler(event) {
   try {
@@ -48,6 +55,7 @@ exports.handler = async function handler(event) {
         passwordHash: passwordMeta.hash,
         passwordSalt: passwordMeta.salt,
         createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
       };
 
       users.push(user);
@@ -75,6 +83,9 @@ exports.handler = async function handler(event) {
       if (!user || !verifyPassword(password, user)) {
         return json(401, { error: "Invalid email or password." });
       }
+
+      user.lastLoginAt = new Date().toISOString();
+      await writeCollection("users", users);
 
       const sessions = await readCollection("sessions");
       const token = createToken();
@@ -143,7 +154,10 @@ exports.handler = async function handler(event) {
 
       const orders = await readCollection("orders");
       return json(200, {
-        orders: orders.filter((order) => order.userId === session.user.id).reverse(),
+        orders: orders
+          .filter((order) => order.userId === session.user.id)
+          .map((order) => hydrateOrder(order))
+          .reverse(),
       });
     }
 
@@ -155,8 +169,13 @@ exports.handler = async function handler(event) {
 
       const body = parseBody(event.body);
       const items = Array.isArray(body.items) ? body.items : [];
+      const customer = sanitizeCustomer(body.customer || {});
       if (!items.length) {
         return json(400, { error: "At least one item is required." });
+      }
+
+      if (customer.phone.length !== 10 || customer.address.length < 10) {
+        return json(400, { error: "Valid phone number and delivery address are required." });
       }
 
       const builtItems = buildOrderItems(
@@ -176,6 +195,7 @@ exports.handler = async function handler(event) {
         userId: session.user.id,
         status: "awaiting_payment",
         items: builtItems,
+        customer,
         subtotal,
         deliveryFee: DELIVERY_FEE,
         total: subtotal + DELIVERY_FEE,
@@ -309,6 +329,14 @@ function sanitizeUser(user) {
   };
 }
 
+function sanitizeCustomer(customer) {
+  return {
+    phone: String(customer?.phone || "").replace(/\D/g, "").slice(0, 10),
+    address: String(customer?.address || "").trim(),
+    note: String(customer?.note || "").trim(),
+  };
+}
+
 async function getSessionUser(authorizationHeader = "") {
   if (!authorizationHeader.startsWith("Bearer ")) {
     return null;
@@ -368,6 +396,40 @@ function buildOrderItems(items) {
   return built;
 }
 
+function resolveOrderItemRestaurant(item) {
+  if (item?.restaurantId) {
+    const restaurant = restaurants.find((entry) => entry.id === item.restaurantId);
+    if (restaurant) {
+      return restaurant;
+    }
+  }
+
+  return restaurants.find((restaurant) =>
+    Array.isArray(restaurant.menu) &&
+    restaurant.menu.some((menuItem) => menuItem.id === item?.menuId)
+  );
+}
+
+function hydrateOrder(order) {
+  return {
+    ...order,
+    items: Array.isArray(order?.items)
+      ? order.items.map((item) => {
+          const restaurant = resolveOrderItemRestaurant(item);
+          const menuItem = restaurant?.menu?.find((entry) => entry.id === item?.menuId);
+
+          return {
+            ...item,
+            restaurantId: item?.restaurantId || restaurant?.id || "",
+            restaurantName: item?.restaurantName || restaurant?.name || "Restaurant unavailable",
+            name: item?.name || menuItem?.name || "Item unavailable",
+            price: Number(item?.price ?? menuItem?.price ?? 0),
+          };
+        })
+      : [],
+  };
+}
+
 function buildAdminOrders(orders, users) {
   return orders
     .slice()
@@ -375,7 +437,7 @@ function buildAdminOrders(orders, users) {
     .map((order) => {
       const user = users.find((entry) => entry.id === order.userId);
       return {
-        ...order,
+        ...hydrateOrder(order),
         userName: user ? user.name : "Unknown user",
         userEmail: user ? user.email : "Unknown email",
       };
@@ -383,7 +445,12 @@ function buildAdminOrders(orders, users) {
 }
 
 async function readStore() {
-  ensureStorageConfig();
+  if (!hasRemoteStorageConfig()) {
+    return {
+      sha: null,
+      data: await readLocalStore(),
+    };
+  }
 
   const response = await githubRequest(
     `https://api.github.com/repos/${GITHUB_REPO}/contents/${DATA_PATH}?ref=${encodeURIComponent(DATA_BRANCH)}`,
@@ -416,7 +483,10 @@ async function readStore() {
 }
 
 async function writeStore(data, sha, message) {
-  ensureStorageConfig();
+  if (!hasRemoteStorageConfig()) {
+    await writeLocalStore(data);
+    return;
+  }
 
   const encrypted = encryptStore(data);
   const body = {
@@ -443,10 +513,44 @@ async function writeStore(data, sha, message) {
   }
 }
 
-function ensureStorageConfig() {
-  if (!GITHUB_TOKEN || !STORE_SECRET) {
-    throw new Error("Deployed storage is not configured.");
+function hasRemoteStorageConfig() {
+  return Boolean(GITHUB_TOKEN && STORE_SECRET);
+}
+
+async function readLocalStore() {
+  try {
+    const raw = await fs.readFile(LOCAL_STORE_PATH, "utf8");
+    const parsed = JSON.parse(raw);
+    return normalizeStoreData(parsed);
+  } catch {
+    const initial = createInitialStoreData();
+    await writeLocalStore(initial);
+    return initial;
   }
+}
+
+async function writeLocalStore(data) {
+  const normalized = normalizeStoreData(data);
+  await fs.mkdir(path.dirname(LOCAL_STORE_PATH), { recursive: true });
+  await fs.writeFile(LOCAL_STORE_PATH, JSON.stringify(normalized, null, 2), "utf8");
+}
+
+function createInitialStoreData() {
+  return normalizeStoreData({
+    users: seedUsers,
+    sessions: seedSessions,
+    orders: seedOrders,
+    adminSessions: seedAdminSessions,
+  });
+}
+
+function normalizeStoreData(data) {
+  return {
+    users: Array.isArray(data.users) ? data.users : [],
+    sessions: Array.isArray(data.sessions) ? data.sessions : [],
+    orders: Array.isArray(data.orders) ? data.orders : [],
+    adminSessions: Array.isArray(data.adminSessions) ? data.adminSessions : [],
+  };
 }
 
 function encryptStore(data) {
